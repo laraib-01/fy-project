@@ -1,145 +1,113 @@
-const express = require("express");
-const { register, login } = require("../controllers/user");
-const authenticate = require("../middleware/auth");
-const { createEvent, getAllEvents } = require("../controllers/events");
-const { createRecord, getRecords } = require("../controllers/records");
-const {
+import express from "express";
+import { register, login } from "../controllers/user.js";
+import authMiddleware from "../middleware/auth.js";
+import {
+  createEvent,
+  getAllEvents,
+} from "../controllers/events.js";
+import {
+  createRecord,
+  getRecords,
+} from "../controllers/records.js";
+import {
   createSubscription,
   getSubscriptions,
-} = require("../controllers/subscriptions");
-const {
+} from "../controllers/subscriptions.js";
+import {
   createAssignment,
   getAllAssignments,
   updateAssignment,
   deleteAssignment,
   assignmentSubmission,
-} = require("../controllers/assignments");
-const {
+} from "../controllers/assignments.js";
+import {
   createAttendance,
   getAllAttendance,
   updateAttendance,
   deleteAttendance,
-} = require("../controllers/attendance");
-const {
+} from "../controllers/attendance.js";
+import {
   createClass,
   getTeacherClasses,
   updateClass,
   deleteClass,
-} = require("../controllers/classes");
-const { getStudents } = require("../controllers/students");
-const {
+} from "../controllers/classes.js";
+import { getStudents } from "../controllers/students.js";
+import {
   getAllSchools,
   createSchool,
   updateSchool,
   deleteSchool,
-} = require("../controllers/schools");
+} from "../controllers/schools.js";
+
 const router = express.Router();
 
-// User Routes
+//
+// 🧑‍💻 User Routes
+//
 router.post("/register", register);
 router.post("/login", login);
 
-// Events Routes
-router.post("/save-event", authenticate, createEvent);
-router.get("/events", authenticate, getAllEvents);
+//
+// 📅 Events
+//
+router.use("/events", authMiddleware);
+router.post("/events", createEvent);              // Create event
+router.get("/events", getAllEvents);              // Get all events
 
-// Records Routes
-router.post("/save-record", authenticate, createRecord);
-router.get("/records/:student_id", authenticate, getRecords);
+//
+// 📂 Records
+//
+router.use("/records", authMiddleware);
+router.post("/records", createRecord);            // Create record
+router.get("/records/:student_id", getRecords);   // Get records by student
 
-// Subscriptions Routes
-router.post("/save-subscription", authenticate, createSubscription);
-router.get("/subscriptions", authenticate, getSubscriptions);
+//
+// 💳 Subscriptions
+//
+router.use("/subscriptions", authMiddleware);
+router.post("/subscriptions", createSubscription);   // Create subscription
+router.get("/subscriptions", getSubscriptions);      // Get all
 
-// Assignments Routes
-router.post("/save-assignment", authenticate, createAssignment);
-router.get("/assignments", authenticate, getAllAssignments);
-router.put(
-  "/update-assignment/:assignment_id",
-  authenticate,
-  updateAssignment
-);
-router.delete(
-  "/delete-assignment/:assignment_id",
-  authenticate,
-  deleteAssignment
-);
+//
+// 📝 Assignments
+//
+router.use("/assignments", authMiddleware);
+router.post("/assignments", createAssignment);                 // Create
+router.get("/assignments", getAllAssignments);                 // Get all
+router.put("/assignments/:assignment_id", updateAssignment);   // Update
+router.delete("/assignments/:assignment_id", deleteAssignment);// Delete
+router.post("/assignments/submit", assignmentSubmission);      // Submit
 
-// Assignment Submission Routes
-router.post("/submit-assignment", authenticate, assignmentSubmission);
+//
+// 🧍 Attendance
+//
+router.use("/attendance", authMiddleware);
+router.post("/attendance", createAttendance);                  // Create
+router.get("/attendance", getAllAttendance);                   // Query by ?class_id=
+router.put("/attendance/:attendance_id", updateAttendance);    // Update
+router.delete("/attendance/:attendance_id", deleteAttendance); // Delete
 
-// Attendance Routes
-router.post("/save-attendance", authenticate, createAttendance);
-router.get("/attendance", authenticate, getAllAttendance);
-// Optional query: ?class_id=3
-router.put(
-  "/update-attendance/:attendance_id",
-  authenticate,
-  updateAttendance
-);
-router.delete(
-  "/delete-attendance/:attendance_id",
-  authenticate,
-  deleteAttendance
-);
+//
+// 🏫 Classes
+//
+router.use("/classes", authMiddleware);
+router.post("/classes", createClass);                // Create class
+router.get("/classes", getTeacherClasses);           // Get teacher classes
+router.put("/classes/:class_id", updateClass);       // Update
+router.delete("/classes/:class_id", deleteClass);    // Delete
 
-// # Create attendance
-// POST /attendance
-// {
-//   "student_id": 1,
-//   "attendance_date": "2025-05-27",
-//   "status": "Present",
-//   "class_id": 2
-// }
+//
+// 👨‍🎓 Students
+//
+router.post("/students/:class_id", authMiddleware, getStudents); // Get students by class
 
-// # Get attendance for class 2
-// GET /attendance?class_id=2
+//
+// 🏢 Schools
+//
+router.get("/schools", getAllSchools);                         // Public
+router.post("/schools", authMiddleware, createSchool);         // Create
+router.put("/schools/:id", authMiddleware, updateSchool);      // Update
+router.delete("/schools/:id", authMiddleware, deleteSchool);   // Delete
 
-// # Update attendance
-// PUT /attendance/15
-// {
-//   "status": "Absent",
-//   "attendance_date": "2025-05-27",
-//   "class_id": 2
-// }
-
-// # Delete attendance
-// DELETE /attendance/15
-
-// Classes Routes
-router.post("/save-class", authenticate, createClass);
-router.get("/classes", authenticate, getTeacherClasses);
-router.put("/update-class/:class_id", authenticate, updateClass);
-router.delete("/delete-class/:class_id", authenticate, deleteClass);
-
-// # Create class
-// POST /classes
-// {
-//   "school_id": 1,
-//   "class_name": "8th Grade A"
-// }
-
-// # Get all classes for current teacher
-// GET /classes
-
-// # Update class name
-// PUT /classes/3
-// {
-//   "class_name": "6th Grade Science (Updated)"
-// }
-
-// # Delete class
-// DELETE /classes/3
-
-// Student Routes
-router.post("/students/:class_id", authenticate, getStudents);
-
-// No auth needed for fetching schools
-router.get("/schools", getAllSchools);
-
-// Auth + role check handled inline in controller
-router.post("/schools", authenticate, createSchool);
-router.put("/schools/:school_id", authenticate, updateSchool);
-router.delete("/schools/:school_id", authenticate, deleteSchool);
-
-module.exports = router;
+export default router;

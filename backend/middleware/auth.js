@@ -1,23 +1,34 @@
-const jwt = require("jsonwebtoken");
+import jwt from 'jsonwebtoken';
 
-const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.header('Authorization');
 
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res
       .status(401)
-      .json({ status: "error", message: "Access denied. No token provided." });
+      .json({ status: 'error', message: 'Access denied. No token provided.' });
   }
 
+  const token = authHeader.replace('Bearer ', '').trim();
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = decoded; // { user_id, role, school_id }
+    if (!decoded || !decoded.id || !decoded.role) {
+      return res
+        .status(403)
+        .json({ status: 'error', message: 'Token missing required user info.' });
+    }
+
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+    };
+
     next();
   } catch (error) {
     res.status(401).json({ status: "error", message: "Invalid token" });
   }
 };
 
-module.exports = authenticate;
+export default authMiddleware;

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Navbar,
   NavbarBrand,
@@ -16,6 +16,7 @@ import {
 import { Icon } from "@iconify/react";
 
 const TeacherLayout = ({ children }) => {
+  const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
@@ -144,7 +145,7 @@ const TeacherLayout = ({ children }) => {
           </NavbarContent>
 
           <NavbarContent justify="end">
-            <NavbarItem>
+            {/* <NavbarItem>
               <Button variant="light" isIconOnly className="relative">
                 <Icon icon="lucide:bell" />
                 <Badge
@@ -154,7 +155,7 @@ const TeacherLayout = ({ children }) => {
                   className="absolute -top-1 -right-1"
                 />
               </Button>
-            </NavbarItem>
+            </NavbarItem> */}
             <Dropdown placement="bottom-end">
               <DropdownTrigger>
                 <Button variant="light" className="flex items-center gap-2">
@@ -170,20 +171,9 @@ const TeacherLayout = ({ children }) => {
                 <DropdownItem
                   key="profile"
                   startContent={<Icon icon="lucide:user" />}
+                  onPress={() => navigate("/teacher/profile")}
                 >
                   My Profile
-                </DropdownItem>
-                <DropdownItem
-                  key="settings"
-                  startContent={<Icon icon="lucide:settings" />}
-                >
-                  Settings
-                </DropdownItem>
-                <DropdownItem
-                  key="help"
-                  startContent={<Icon icon="lucide:help-circle" />}
-                >
-                  Help & Support
                 </DropdownItem>
                 <DropdownItem
                   key="logout"

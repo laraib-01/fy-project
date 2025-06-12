@@ -34,22 +34,25 @@ export const Login = () => {
         email,
         password,
       });
+
+      const { data } = res?.data;
+      console.log("res", res);
       if (res?.data?.status === "success") {
         localStorage.setItem("educonnect_token", res.data.token);
-        localStorage.setItem("educonnect_role", res.data.role);
+        localStorage.setItem("educonnect_role", data?.user?.role);
         addToast({
           title: res?.data?.message,
           color: "success",
           hideIcon: true,
         });
         setTimeout(() => {
-          if (res?.data?.role === "Parent") {
+          if (data?.user?.role === "Parent") {
             navigate("/parent");
-          } else if (res?.data?.role === "Teacher") {
+          } else if (data?.user?.role === "Teacher") {
             navigate("/teacher");
-          } else if (res?.data?.role === "School_Admin") {
+          } else if (data?.user?.role === "School_Admin") {
             navigate("/school");
-          } else if (res?.data?.role === "EduConnect_Admin") {
+          } else if (data?.user?.role === "EduConnect_Admin") {
             navigate("/admin");
           }
           setIsLoading(false);

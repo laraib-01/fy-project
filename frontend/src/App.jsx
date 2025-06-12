@@ -14,6 +14,7 @@ import { Schools } from "./pages/Schools";
 import { AnalyticsAndReport } from "./pages/Reports";
 import { AdminProfile } from "./pages/AdminProfile";
 import { AdminSettings } from "./pages/AdminSettings";
+import { TeacherProfile } from "./pages/TeacherProfile";
 
 const App = () => {
   return (
@@ -59,6 +60,14 @@ const App = () => {
           element={
             <PrivateRoute allowedRoles={["Teacher"]}>
               <Announcements />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/teacher/profile"
+          element={
+            <PrivateRoute allowedRoles={["Teacher"]}>
+              <TeacherProfile />
             </PrivateRoute>
           }
         />
