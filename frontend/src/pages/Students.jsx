@@ -27,10 +27,10 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import TeacherLayout from "./TeacherLayout";
+import TeacherLayout from "../components/teacher/TeacherLayout";
 import axios from "axios";
 
-export default function Students() {
+export const Students = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");

@@ -1,7 +1,7 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 
-const PrivateRoute = ({ children, allowedRoles }) => {
+export const PrivateRoute = ({ children, allowedRoles }) => {
   const isAuthenticated = localStorage.getItem("educonnect_token") !== null;
 
   const userRole = localStorage.getItem("educonnect_role");
@@ -16,5 +16,3 @@ const PrivateRoute = ({ children, allowedRoles }) => {
 
   return children;
 };
-
-export default PrivateRoute;

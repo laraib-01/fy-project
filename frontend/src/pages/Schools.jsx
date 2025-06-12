@@ -28,10 +28,10 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import { AdminLayout } from "./AdminLayout";
+import { AdminLayout } from "../components/admin/AdminLayout";
 import axios from "axios";
 
-export default function AdminSchools() {
+export const Schools = () => {
   const {
     isOpen: isAddEditSchoolModalOpen,
     onOpen: onAddEditSchoolModalOpen,

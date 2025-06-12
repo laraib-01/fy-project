@@ -1,35 +1,23 @@
 const jwt = require("jsonwebtoken");
 
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.header("Authorization");
+const authenticate = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return res
       .status(401)
       .json({ status: "error", message: "Access denied. No token provided." });
   }
 
-  const token = authHeader.replace("Bearer ", "").trim();
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!decoded || !decoded.id || !decoded.role) {
-      return res
-        .status(403)
-        .json({ status: "error", message: "Token missing required user info." });
-    }
-
-    req.user = {
-      id: decoded.id,
-      role: decoded.role,
-    };
-
+    req.user = decoded; // { user_id, role, school_id }
     next();
   } catch (error) {
-    console.error("JWT verification error:", error.message);
-    return res.status(401).json({ status: "error", message: "Invalid or expired token" });
+    res.status(401).json({ status: "error", message: "Invalid token" });
   }
 };
 
-module.exports = authMiddleware;
+module.exports = authenticate;
