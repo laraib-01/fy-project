@@ -9,7 +9,7 @@ const register = async (req, res) => {
       "SELECT * FROM users WHERE email = ?",
       [email],
       async (err, results) => {
-        if (err) return res.status(500).json({ error: "Database error" });
+        if (err) return res.status(500).json({ status: "error", message: "Database error" });
 
         if (results?.length > 0) {
           return res
@@ -24,7 +24,7 @@ const register = async (req, res) => {
           [name, email, password, role],
           (err, result) => {
             if (err)
-              return res.status(500).json({ error: "Registration failed" });
+              return res.status(500).json({ status: "error", message: "Registration failed" });
 
             res.status(201).json({
               status: "success",
@@ -35,7 +35,7 @@ const register = async (req, res) => {
       }
     );
   } catch (error) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ status: "error", message: "Server error" });
   }
 };
 
@@ -46,13 +46,13 @@ const login = async (req, res) => {
     [email],
     async (err, results) => {
       if (err || results.length === 0)
-        return res.status(401).json({ error: "Invalid credentials" });
+        return res.status(401).json({ status: "error", message: "Invalid credentials" });
 
       const user = results[0];
       // const isMatch = await bcrypt.compare(password, user.password);
       // if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
       if (password !== user.password) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        return res.status(401).json({ status: "error", message: "Password is incorrect" });
       }
 
       const token = jwt.sign(
