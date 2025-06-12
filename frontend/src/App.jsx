@@ -1,8 +1,4 @@
-import {
-  Route,
-  BrowserRouter as Router,
-  Routes,
-} from "react-router-dom";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { LandingPage } from "./pages/LandingPage";
 import { Login } from "./pages/Login";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -15,6 +11,9 @@ import { Announcements } from "./pages/Announcements";
 import { ParentDashboard } from "./components/parent/ParentDashboard";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { Schools } from "./pages/Schools";
+import { AnalyticsAndReport } from "./pages/Reports";
+import { AdminProfile } from "./pages/AdminProfile";
+import { AdminSettings } from "./pages/AdminSettings";
 
 const App = () => {
   return (
@@ -84,6 +83,31 @@ const App = () => {
           element={
             <PrivateRoute allowedRoles={["EduConnect_Admin"]}>
               <Schools />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/admin/settings"
+          element={
+            <PrivateRoute allowedRoles={["EduConnect_Admin"]}>
+              <AdminSettings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <PrivateRoute allowedRoles={["EduConnect_Admin"]}>
+              <AdminProfile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <PrivateRoute allowedRoles={["EduConnect_Admin"]}>
+              <AnalyticsAndReport />
             </PrivateRoute>
           }
         />

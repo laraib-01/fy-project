@@ -139,7 +139,7 @@ router.get("/schools", getAllSchools);
 
 // Auth + role check handled inline in controller
 router.post("/schools", authenticate, createSchool);
-router.put("/schools/:id", authenticate, updateSchool);
-router.delete("/schools/:id", authenticate, deleteSchool);
+router.put("/schools/:school_id", authenticate, updateSchool);
+router.delete("/schools/:school_id", authenticate, deleteSchool);
 
 module.exports = router;

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Navbar,
   NavbarBrand,
@@ -16,6 +16,7 @@ import {
 import { Icon } from "@iconify/react";
 
 export const AdminLayout = ({ children }) => {
+  const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -41,12 +42,6 @@ export const AdminLayout = ({ children }) => {
     },
     { name: "Reports", icon: "lucide:bar-chart-2", path: "/admin/reports" },
     { name: "Settings", icon: "lucide:settings", path: "/admin/settings" },
-    {
-      name: "Support",
-      icon: "lucide:help-circle",
-      path: "/admin/support",
-      badge: 5,
-    },
   ];
 
   return (
@@ -151,7 +146,7 @@ export const AdminLayout = ({ children }) => {
           </NavbarContent>
 
           <NavbarContent justify="end">
-            <NavbarItem>
+            {/* <NavbarItem>
               <Button variant="light" isIconOnly className="relative">
                 <Icon icon="lucide:bell" />
                 <Badge
@@ -161,7 +156,7 @@ export const AdminLayout = ({ children }) => {
                   className="absolute -top-1 -right-1"
                 />
               </Button>
-            </NavbarItem>
+            </NavbarItem> */}
             <Dropdown placement="bottom-end">
               <DropdownTrigger>
                 <Button variant="light" className="flex items-center gap-2">
@@ -177,20 +172,16 @@ export const AdminLayout = ({ children }) => {
                 <DropdownItem
                   key="profile"
                   startContent={<Icon icon="lucide:user" />}
+                  onPress={() => navigate("/admin/profile")}
                 >
                   My Profile
                 </DropdownItem>
                 <DropdownItem
                   key="settings"
                   startContent={<Icon icon="lucide:settings" />}
+                  onPress={() => navigate("/admin/settings")}
                 >
                   Settings
-                </DropdownItem>
-                <DropdownItem
-                  key="help"
-                  startContent={<Icon icon="lucide:help-circle" />}
-                >
-                  Help & Support
                 </DropdownItem>
                 <DropdownItem
                   key="logout"
