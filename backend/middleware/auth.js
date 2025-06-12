@@ -1,15 +1,15 @@
-const jwt = require("jsonwebtoken");
+import jwt from 'jsonwebtoken';
 
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.header("Authorization");
+  const authHeader = req.header('Authorization');
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res
       .status(401)
-      .json({ status: "error", message: "Access denied. No token provided." });
+      .json({ status: 'error', message: 'Access denied. No token provided.' });
   }
 
-  const token = authHeader.replace("Bearer ", "").trim();
+  const token = authHeader.replace('Bearer ', '').trim();
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -17,7 +17,7 @@ const authMiddleware = (req, res, next) => {
     if (!decoded || !decoded.id || !decoded.role) {
       return res
         .status(403)
-        .json({ status: "error", message: "Token missing required user info." });
+        .json({ status: 'error', message: 'Token missing required user info.' });
     }
 
     req.user = {
@@ -32,4 +32,4 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+export default authMiddleware;

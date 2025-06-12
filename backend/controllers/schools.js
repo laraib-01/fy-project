@@ -1,149 +1,184 @@
-const db = require("../config/db");
+import db from "../config/db.js";
+import { promisify } from 'util';
+
+// Promisify db.query
+const query = promisify(db.query).bind(db);
+
+// Error handler
+const handleError = (res, status = 500, message = 'An error occurred') => {
+  console.error(message);
+  return res.status(status).json({ 
+    status: 'error', 
+    message 
+  });
+};
 
 // Create School (Admins Only)
-const createSchool = async (req, res) => {
-  if (req.user.role !== "EduConnect_Admin") {
-    return res.status(403).json({
-      status: "error",
-      message: "You are not authorized to create a school",
-    });
-  }
-
-  const { name, address, phone_number, email, admin_name, admin_email } = req.body;
-
-  if (!name || !address || !phone_number || !email || !admin_name || !admin_email) {
-    return res.status(400).json({
-      status: "error",
-      message:
-        "All fields are required: School name, School email, Phone number Address, Admin name, Admin email",
-    });
-  }
-
+export const createSchool = async (req, res) => {
   try {
-    db.query(
-      "INSERT INTO school (name, address, phone_number, email, admin_name, admin_email) VALUES (?, ?, ?, ?)",
-      [name, address, phone_number, email, admin_name, admin_email],
-      (err, result) => {
-        if (err) {
-          console.error("Create school error:", err);
-          return res.status(500).json({
-            status: "error",
-            message: "Failed to create school",
-            error: err
-          });
-        }
-        res.status(201).json({
-          status: "success",
-          message: "School created successfully",
-          school_id: result.insertId,
-        });
-      }
+    const { role } = req.user;
+    const { name, address, phone_number, email, admin_name, admin_email } = req.body;
+
+    // Authorization check
+    if (role !== 'EduConnect_Admin') {
+      return handleError(res, 403, 'You are not authorized to create a school');
+    }
+
+    // Input validation
+    const requiredFields = { name, address, phone_number, email, admin_name, admin_email };
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      return handleError(res, 400, `Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    // Create new school
+    const result = await query(
+      `INSERT INTO school 
+       (name, address, phone_number, email, admin_name, admin_email) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, address, phone_number, email, admin_name, admin_email]
     );
+
+    return res.status(201).json({
+      status: 'success',
+      message: 'School created successfully',
+      data: {
+        school_id: result.insertId,
+        name,
+        email,
+        created_at: new Date().toISOString()
+      }
+    });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    console.error('Error in createSchool:', error);
+    return handleError(res, 500, 'Failed to create school');
   }
 };
 
 // Get All Schools (Public or Authenticated Users)
-const getAllSchools = async (req, res) => {
+export const getAllSchools = async (req, res) => {
   try {
-    db.query("SELECT * FROM school", (err, results) => {
-      if (err) {
-        console.error("Fetch schools error:", err);
-        return res
-          .status(500)
-          .json({ status: "error", message: "Failed to fetch schools" });
+    const schools = await query('SELECT * FROM school');
+    
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        count: schools.length,
+        schools
       }
-      res.status(200).json({ status: "success", schools: results });
     });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    console.error('Error in getAllSchools:', error);
+    return handleError(res, 500, 'Failed to fetch schools');
   }
 };
 
 // Update School (Admins Only)
-const updateSchool = async (req, res) => {
-  if (req.user.role !== "EduConnect_Admin") {
-    return res.status(403).json({
-      status: "error",
-      message: "You are not authorized to update this school",
-    });
-  }
-
-  const { id } = req.params;
-  const { school_name, address, contact_number, email } = req.body;
-
-  if (!school_name || !address || !contact_number || !email) {
-    return res.status(400).json({
-      status: "error",
-      message: "All fields are required",
-    });
-  }
-
+export const updateSchool = async (req, res) => {
   try {
-    db.query(
-      "UPDATE schools SET school_name = ?, address = ?, contact_number = ?, email = ? WHERE id = ?",
-      [school_name, address, contact_number, email, id],
-      (err, result) => {
-        if (err) {
-          console.error("Update school error:", err);
-          return res
-            .status(500)
-            .json({ status: "error", message: "Failed to update school" });
-        }
-        if (result.affectedRows === 0) {
-          return res.status(404).json({
-            status: "error",
-            message: "School not found",
-          });
-        }
-        res
-          .status(200)
-          .json({ status: "success", message: "School updated successfully" });
+    const { role } = req.user;
+    const { id } = req.params;
+    const { name, address, phone_number, email, admin_name, admin_email } = req.body;
+
+    // Authorization check
+    if (role !== 'EduConnect_Admin') {
+      return handleError(res, 403, 'You are not authorized to update this school');
+    }
+
+    // Input validation
+    if (!id) {
+      return handleError(res, 400, 'School ID is required');
+    }
+
+    // Build update query dynamically based on provided fields
+    const updateFields = [];
+    const updateValues = [];
+    
+    const fieldsToUpdate = {
+      name, address, phone_number, 
+      email, admin_name, admin_email
+    };
+
+    Object.entries(fieldsToUpdate).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateFields.push(`${key} = ?`);
+        updateValues.push(value);
       }
+    });
+
+    if (updateFields.length === 0) {
+      return handleError(res, 400, 'No valid fields provided for update');
+    }
+
+    updateValues.push(id); // Add id for WHERE clause
+
+    const result = await query(
+      `UPDATE school SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues
     );
+
+    if (result.affectedRows === 0) {
+      return handleError(res, 404, 'School not found');
+    }
+
+    // Fetch updated school data
+    const [updatedSchool] = await query('SELECT * FROM school WHERE id = ?', [id]);
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'School updated successfully',
+      data: updatedSchool
+    });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    console.error('Error in updateSchool:', error);
+    return handleError(res, 500, 'Failed to update school');
   }
 };
 
 // Delete School (Admins Only)
-const deleteSchool = async (req, res) => {
-  if (req.user.role !== "EduConnect_Admin") {
-    return res.status(403).json({
-      status: "error",
-      message: "You are not authorized to delete this school",
-    });
-  }
-
-  const { id } = req.params;
-
+export const deleteSchool = async (req, res) => {
   try {
-    db.query("DELETE FROM schools WHERE id = ?", [id], (err, result) => {
-      if (err) {
-        console.error("Delete school error:", err);
-        return res
-          .status(500)
-          .json({ status: "error", message: "Failed to delete school" });
+    const { role } = req.user;
+    const { id } = req.params;
+
+    // Authorization check
+    if (role !== 'EduConnect_Admin') {
+      return handleError(res, 403, 'You are not authorized to delete this school');
+    }
+
+    // Input validation
+    if (!id) {
+      return handleError(res, 400, 'School ID is required');
+    }
+
+    // First, get school data before deletion for response
+    const [school] = await query('SELECT * FROM school WHERE id = ?', [id]);
+    
+    if (!school) {
+      return handleError(res, 404, 'School not found');
+    }
+
+    // Delete the school
+    const result = await query('DELETE FROM school WHERE id = ?', [id]);
+
+    if (result.affectedRows === 0) {
+      return handleError(res, 404, 'School not found');
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'School deleted successfully',
+      data: {
+        id,
+        name: school.name,
+        deleted_at: new Date().toISOString()
       }
-      if (result.affectedRows === 0) {
-        return res.status(404).json({
-          status: "error",
-          message: "School not found",
-        });
-      }
-      res
-        .status(200)
-        .json({ status: "success", message: "School deleted successfully" });
     });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    console.error('Error in deleteSchool:', error);
+    return handleError(res, 500, 'Failed to delete school');
   }
-};
-
-module.exports = {
-  createSchool,
-  getAllSchools,
-  updateSchool,
-  deleteSchool,
 };
