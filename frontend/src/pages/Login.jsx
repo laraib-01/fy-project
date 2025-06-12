@@ -11,11 +11,11 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import axios from "axios";
-import { Footer } from "./Footer";
-import { Navbar } from "./Navbar";
 import { addToast, ToastProvider } from "@heroui/toast";
+import { Footer } from "../components/Footer";
+import { Navbar } from "../components/Navbar";
 
-const Login = () => {
+export const Login = () => {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -155,5 +155,3 @@ const Login = () => {
     </>
   );
 };
-
-export default Login;

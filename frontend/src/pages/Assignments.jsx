@@ -27,7 +27,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import TeacherLayout from "./TeacherLayout";
+import TeacherLayout from "../components/teacher/TeacherLayout";
 
 export const Assignments = () => {
   const [selectedTab, setSelectedTab] = useState("overview");

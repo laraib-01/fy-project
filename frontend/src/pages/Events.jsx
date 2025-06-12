@@ -17,10 +17,10 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import TeacherLayout from "./TeacherLayout";
 import axios from "axios";
+import TeacherLayout from "../components/teacher/TeacherLayout";
 
-export default function Events() {
+export const Events = () => {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
 
   const [eventTitle, setEventTitle] = useState("");

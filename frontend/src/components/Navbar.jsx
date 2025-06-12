@@ -28,6 +28,8 @@ export const Navbar = () => {
         return "/parent";
       case "School_Admin":
         return "/school";
+      case "EduConnect_Admin":
+        return "/admin";
       default:
         return "/login";
     }

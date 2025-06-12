@@ -24,32 +24,24 @@ import {
   TableCell,
   Chip,
   Progress,
+  ToastProvider,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import { AdminLayout } from "./AdminLayout";
+import { AdminLayout } from "../components/admin/AdminLayout";
 import axios from "axios";
 
-export default function AdminSchools() {
+export const Schools = () => {
   const {
-    isOpen: isAddSchoolModalOpen,
-    onOpen: onAddSchoolModalOpen,
-    onOpenChange: onAddSchoolModalOpenChange,
+    isOpen: isAddEditSchoolModalOpen,
+    onOpen: onAddEditSchoolModalOpen,
+    onOpenChange: onAddEditSchoolModalOpenChange,
+  } = useDisclosure();
+
+  const {
+    isOpen: isDeleteSchoolModalOpen,
+    onOpen: onDeleteSchoolModalOpen,
+    onOpenChange: onDeleteSchoolModalOpenChange,
   } = useDisclosure();
 
   const [schools, setSchools] = useState([]);
@@ -65,7 +57,11 @@ export default function AdminSchools() {
     billingCycle: "Monthly",
   });
 
-  console.log("formData", formData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentSchoolId, setCurrentSchoolId] = useState(null);
+
+  console.log(currentSchoolId);
 
   const subscriptionPlans = [
     {
@@ -125,13 +121,16 @@ export default function AdminSchools() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSchools(response.data?.schools || []);
+      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching schools:", error);
       addToast({
         title: "Error",
         description: "Unable to load schools.",
-        status: "error",
+        color: "error",
+        hideIcon: true,
       });
+      setIsLoading(false);
     }
   };
 
@@ -139,46 +138,115 @@ export default function AdminSchools() {
     fetchSchools();
   }, []);
 
+  const resetForm = () => {
+    setFormData({
+      schoolName: "",
+      email: "",
+      phone: "",
+      address: "",
+      adminName: "",
+      adminEmail: "",
+    });
+    setIsEditing(false);
+    setCurrentSchoolId(null);
+  };
+
   const handleInputChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleAddSchool = async () => {
     const token = localStorage.getItem("educonnect_token");
-
+    setIsLoading(true);
     try {
-      await axios.post(
-        "http://localhost:5000/api/schools",
-        {
-          name: formData.schoolName,
-          address: formData.address,
-          phone_number: formData.phone,
-          email: formData.email,
-          admin_name: formData.adminName,
-          admin_email: formData.adminEmail,
-        },
+      const payload = {
+        name: formData.schoolName,
+        address: formData.address,
+        phone_number: formData.phone,
+        email: formData.email,
+        admin_name: formData.adminName,
+        admin_email: formData.adminEmail,
+      };
+
+      let res;
+      if (isEditing && currentSchoolId) {
+        res = await axios.put(
+          `http://localhost:5000/api/schools/${currentSchoolId}`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        res = await axios.post("http://localhost:5000/api/schools", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      addToast({
+        title: "Success",
+        description: res?.data?.message,
+        color: "success",
+        hideIcon: true,
+      });
+
+      fetchSchools();
+      resetForm();
+      onAddSchoolModalOpenChange(false);
+    } catch (error) {
+      console.error("Failed to save school:", error);
+      addToast({
+        title: "Error",
+        description:
+          error.response?.data?.message ||
+          "Could not save school. Please try again.",
+        color: "error",
+        hideIcon: true,
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditClick = (school) => {
+    setFormData({
+      schoolName: school.name,
+      email: school.email,
+      phone: school.phone_number,
+      address: school.address,
+      adminName: school.admin_name,
+      adminEmail: school.admin_email,
+    });
+    setIsEditing(true);
+    setCurrentSchoolId(school.school_id);
+    onAddEditSchoolModalOpen();
+  };
+
+  const handleDeleteSchool = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("educonnect_token");
+      await axios.delete(
+        `http://localhost:5000/api/schools/${currentSchoolId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       addToast({
-        title: "Success",
-        description: "School added successfully.",
-        status: "success",
+        title: "Deleted",
+        description: "School deleted successfully.",
+        color: "success",
       });
 
       fetchSchools();
-      onAddSchoolModalOpenChange(false);
+      onDeleteSchoolModalOpenChange(false);
+      
     } catch (error) {
-      console.error("Failed to add school:", error);
+      console.error("Delete failed:", error);
       addToast({
         title: "Error",
-        description:
-          error.response?.data?.message ||
-          "Could not add school. Please try again.",
+        description: "Failed to delete school.",
         status: "error",
       });
+      setIsLoading(false);
     }
   };
 
@@ -196,10 +264,9 @@ export default function AdminSchools() {
     }).format(value);
   };
 
-  console.log("first")
-
   return (
     <AdminLayout>
+      <ToastProvider placement="bottom-center" toastOffset={0} />
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
@@ -212,7 +279,7 @@ export default function AdminSchools() {
           <Button
             color="primary"
             startContent={<Icon icon="lucide:plus" />}
-            onPress={onAddSchoolModalOpen}
+            onPress={onAddEditSchoolModalOpen}
           >
             Add School
           </Button>
@@ -235,55 +302,57 @@ export default function AdminSchools() {
             <Table removeWrapper aria-label="Schools table">
               <TableHeader>
                 <TableColumn>SCHOOL NAME</TableColumn>
-                <TableColumn>SCHOOL EMAIL</TableColumn>
+                {/* <TableColumn>SCHOOL EMAIL</TableColumn>
                 <TableColumn>PHONE NUMBER</TableColumn>
-                <TableColumn>ADMIN NAME</TableColumn>
-                {/* <TableColumn>PLAN</TableColumn>
+                <TableColumn>ADMIN NAME</TableColumn> */}
+                <TableColumn>PLAN</TableColumn>
                 <TableColumn>USERS</TableColumn>
                 <TableColumn>SUBSCRIPTION DATE</TableColumn>
-                <TableColumn>NEXT BILLING</TableColumn> */}
-                {/* <TableColumn>STATUS</TableColumn> */}
+                <TableColumn>NEXT BILLING</TableColumn>
+                <TableColumn>STATUS</TableColumn>
                 <TableColumn>ACTIONS</TableColumn>
               </TableHeader>
               <TableBody>
                 {filteredSchools.map((school) => (
-                  <TableRow key={school.id}>
+                  <TableRow key={school.school_id}>
                     <TableCell>{school.name}</TableCell>
-                    <TableCell>{school.email}</TableCell>
-                    <TableCell>{school.phone_number}</TableCell>
-                    <TableCell>{school.admin_name}</TableCell>
-                    {/* <TableCell>{school.plan}</TableCell>
+                    <TableCell>{school.plan_type}</TableCell>
                     <TableCell>{school.users}</TableCell>
                     <TableCell>
-                      {new Date(school.subscriptionDate).toLocaleDateString()}
+                      {new Date(school.start_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span>
-                          {new Date(school.nextBilling).toLocaleDateString()}
+                          {new Date(school.end_date).toLocaleDateString()}
                         </span>
                         <span className="text-xs text-foreground-500">
                           {formatCurrency(school.amount)}/month
                         </span>
                       </div>
-                    </TableCell> */}
-                    {/* <TableCell>
+                    </TableCell>
+                    <TableCell>
                       <Chip
                         color={
-                          school.status === "active"
+                          school.subscription_status === "Active"
                             ? "success"
-                            : school.status === "trial"
+                            : school.subscription_status === "Trial"
                             ? "primary"
                             : "danger"
                         }
                         size="sm"
                       >
-                        {school.status}
+                        {school.subscription_status}
                       </Chip>
-                    </TableCell> */}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="flat" isIconOnly>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          isIconOnly
+                          onPress={() => handleEditClick(school)}
+                        >
                           <Icon icon="lucide:edit" />
                         </Button>
                         <Dropdown>
@@ -307,6 +376,17 @@ export default function AdminSchools() {
                             >
                               Suspend Account
                             </DropdownItem>
+                            <DropdownItem
+                              key="delete"
+                              className="text-danger"
+                              color="danger"
+                              onPress={() => {
+                                onDeleteSchoolModalOpen();
+                                setCurrentSchoolId(school.school_id);
+                              }}
+                            >
+                              Delete School
+                            </DropdownItem>
                           </DropdownMenu>
                         </Dropdown>
                       </div>
@@ -320,8 +400,8 @@ export default function AdminSchools() {
       </div>
 
       <Modal
-        isOpen={isAddSchoolModalOpen}
-        onOpenChange={onAddSchoolModalOpenChange}
+        isOpen={isAddEditSchoolModalOpen}
+        onOpenChange={onAddEditSchoolModalOpenChange}
         size="lg"
       >
         <ModalContent>
@@ -451,8 +531,43 @@ export default function AdminSchools() {
                 <Button variant="flat" onPress={onClose}>
                   Cancel
                 </Button>
-                <Button color="primary" onPress={handleAddSchool}>
-                  Add School
+                <Button
+                  color="primary"
+                  onPress={handleAddSchool}
+                  isLoading={isLoading}
+                >
+                  {isEditing ? "Update School" : "Add School"}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={isDeleteSchoolModalOpen}
+        onOpenChange={onDeleteSchoolModalOpenChange}
+        size="lg"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Delete School
+              </ModalHeader>
+              <ModalBody>
+                <p>Are you sure you want to delete this school?</p>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={handleDeleteSchool}
+                  isLoading={isLoading}
+                >
+                  Delete School
                 </Button>
               </ModalFooter>
             </>

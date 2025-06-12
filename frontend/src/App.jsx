@@ -2,20 +2,19 @@ import {
   Route,
   BrowserRouter as Router,
   Routes,
-  useLocation,
 } from "react-router-dom";
-import Login from "./components/Login";
-import { LandingPage } from "./components/LandingPage";
-import { RegisterPage } from "./components/RegisterPage";
-import PrivateRoute from "./components/PrivateRoute";
+import { LandingPage } from "./pages/LandingPage";
+import { Login } from "./pages/Login";
+import { RegisterPage } from "./pages/RegisterPage";
 import { TeacherDashboard } from "./components/teacher/TeacherDashboard";
+import { PrivateRoute } from "./components/PrivateRoute";
+import { Students } from "./pages/Students";
+import { Assignments } from "./pages/Assignments";
+import { Events } from "./pages/Events";
+import { Announcements } from "./pages/Announcements";
 import { ParentDashboard } from "./components/parent/ParentDashboard";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
-import Students from "./components/teacher/Students";
-import Events from "./components/teacher/Events";
-import { Assignments } from "./components/teacher/Assignments";
-import { Announcements } from "./components/teacher/Announcements";
-import AdminSchools from "./components/admin/Schools";
+import { Schools } from "./pages/Schools";
 
 const App = () => {
   return (
@@ -84,7 +83,7 @@ const App = () => {
           path="/admin/schools"
           element={
             <PrivateRoute allowedRoles={["EduConnect_Admin"]}>
-              <AdminSchools />
+              <Schools />
             </PrivateRoute>
           }
         />
