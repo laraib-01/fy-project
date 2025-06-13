@@ -15,6 +15,9 @@ import { AnalyticsAndReport } from "./pages/Reports";
 import { AdminProfile } from "./pages/AdminProfile";
 import { AdminSettings } from "./pages/AdminSettings";
 import { TeacherProfile } from "./pages/TeacherProfile";
+import { SchoolAdminDashboard } from "./components/school-admin/SchoolAdminDashboard";
+import TeacherLayout from "./components/teacher/TeacherLayout";
+import { SchoolAdminLayout } from "./components/school-admin/SchoolAdminLayout";
 
 const App = () => {
   return (
@@ -35,7 +38,9 @@ const App = () => {
           path="/teacher/students"
           element={
             <PrivateRoute allowedRoles={["Teacher"]}>
-              <Students />
+              <TeacherLayout>
+                <Students />
+              </TeacherLayout>
             </PrivateRoute>
           }
         />
@@ -51,7 +56,9 @@ const App = () => {
           path="/teacher/events"
           element={
             <PrivateRoute allowedRoles={["Teacher"]}>
-              <Events />
+              <TeacherLayout>
+                <Events />
+              </TeacherLayout>
             </PrivateRoute>
           }
         />
@@ -76,6 +83,34 @@ const App = () => {
           element={
             <PrivateRoute allowedRoles={["Parent"]}>
               <ParentDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/school"
+          element={
+            <PrivateRoute allowedRoles={["School_Admin"]}>
+              <SchoolAdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/school/students"
+          element={
+            <PrivateRoute allowedRoles={["School_Admin"]}>
+              <SchoolAdminLayout>
+                <Students />
+              </SchoolAdminLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/school/events"
+          element={
+            <PrivateRoute allowedRoles={["Teacher"]}>
+              <SchoolAdminLayout>
+                <Events />
+              </SchoolAdminLayout>
             </PrivateRoute>
           }
         />

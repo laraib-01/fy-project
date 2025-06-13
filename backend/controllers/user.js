@@ -32,7 +32,7 @@ const validateInput = (fields) => {
   }
 
   // Role validation
-  const validRoles = ['Admin', 'Teacher', 'Student', 'Parent'];
+  const validRoles = ['EduConnect_Admin', 'Teacher', 'School_Admin', 'Parent'];
   if (role && !validRoles.includes(role)) {
     errors.push(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
   }
@@ -131,10 +131,10 @@ export const login = async (req, res) => {
     }
 
     // Check password
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    // if (!isPasswordValid) {
-    //   return handleError(res, 401, 'Invalid credentials');
-    // }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return handleError(res, 401, 'Invalid credentials');
+    }
 
     // Generate JWT token
     const token = jwt.sign(

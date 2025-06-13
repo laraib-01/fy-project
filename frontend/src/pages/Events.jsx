@@ -197,7 +197,7 @@ export const Events = () => {
   };
 
   return (
-    <TeacherLayout>
+    <>
       <ToastProvider placement="bottom-center" toastOffset={0} />
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -373,6 +373,6 @@ export const Events = () => {
           )}
         </ModalContent>
       </Modal>
-    </TeacherLayout>
+    </>
   );
-}
+};
