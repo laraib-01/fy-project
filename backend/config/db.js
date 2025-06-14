@@ -1,41 +1,62 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+// db.js
 
+// Import the mysql2 package with Promise support
+import mysql from "mysql2/promise";
+
+// Import dotenv to load environment variables from a .env file
+import dotenv from "dotenv";
+
+// Load environment variables (e.g. DB_HOST, DB_USER, etc.)
 dotenv.config();
 
-const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-};
+// Define database configuration using environment variables
+const pool = mysql.createPool({
+  host: process.env.DB_HOST, // MySQL server host (e.g. localhost)
+  user: process.env.DB_USER, // MySQL username
+  password: process.env.DB_PASSWORD, // MySQL password
+  database: process.env.DB_NAME, // Name of the database to use
+  waitForConnections: true, // Queue connections if none are available
+  connectionLimit: 10, // Max number of connections in the pool
+  queueLimit: 0, // Max number of connection requests (0 = unlimited)
+});
 
-// Create a connection pool
-const pool = mysql.createPool(dbConfig);
-
-// Test the connection
+// Function to test if the connection to the database is working
 const testConnection = async () => {
-    try {
-        const connection = await pool.getConnection();
-        console.log('Successfully connected to MySQL database');
-        connection.release();
-    } catch (error) {
-        console.error('Database connection failed:', error);
-        process.exit(1);
-    }
+  try {
+    // Try to get a connection from the pool
+    const connection = await pool.getConnection();
+
+    // If successful, print a confirmation message
+    console.log("✅ Connected to MySQL database");
+
+    // Release the connection back to the pool
+    connection.release();
+  } catch (error) {
+    // If the connection fails, print the error and exit the app
+    console.error("❌ Database connection failed:", error);
+    process.exit(1); // Exit the process with an error code
+  }
 };
 
+// Call the testConnection function to verify the DB is accessible
 testConnection();
 
-// Export the pool and a method to get a connection
-export const getConnection = () => pool.getConnection();
+// Export a function to get a direct connection from the pool
+export const getConnection = () => pool.getConnection(); // Useful for transactions or manual queries
 
+// Export a query method for SELECT or complex SQL operations
+export const query = (sql, params) => pool.query(sql, params); // Returns [rows, fields]
+
+// Export an execute method (used for INSERT, UPDATE, DELETE)
+export const execute = (sql, params) => pool.execute(sql, params); // Returns [result, fields]
+
+// Export a method to gracefully close the pool (used when shutting down the app)
+export const end = () => pool.end();
+
+// Optionally export all methods together as a default object for convenience
 export default {
-    query: (sql, params) => pool.query(sql, params),
-    execute: (sql, params) => pool.execute(sql, params),
-    getConnection: () => pool.getConnection(),
-    end: () => pool.end()
+  getConnection, // For manual control or transactions
+  query, // For running raw SELECT SQL
+  execute, // For running INSERT/UPDATE/DELETE
+  end, // For closing the pool
 };
