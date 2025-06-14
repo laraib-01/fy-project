@@ -42,23 +42,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { SchoolAdminLayout } from "./SchoolAdminLayout";
 
-export const SchoolAdminDashboard = () => {
-  const [selectedTab, setSelectedTab] = useState("overview");
-  const {
-    isOpen: isAddSchoolModalOpen,
-    onOpen: onAddSchoolModalOpen,
-    onOpenChange: onAddSchoolModalOpenChange,
-  } = useDisclosure();
-  const {
-    isOpen: isAddPlanModalOpen,
-    onOpen: onAddPlanModalOpen,
-    onOpenChange: onAddPlanModalOpenChange,
-  } = useDisclosure();
-
-  const [searchQuery, setSearchQuery] = useState("");
-
+export const AdminDashboard = () => {
   const subscriptionData = [
     { month: "Jan", value: 12000 },
     { month: "Feb", value: 15000 },
@@ -93,130 +78,6 @@ export const SchoolAdminDashboard = () => {
     { name: "Basic", value: 35, color: "#4f46e5" },
     { name: "Standard", value: 45, color: "#06b6d4" },
     { name: "Premium", value: 20, color: "#10b981" },
-  ];
-
-  const schools = [
-    {
-      id: 1,
-      name: "Westview Elementary",
-      plan: "Premium",
-      users: 125,
-      subscriptionDate: "2024-05-15",
-      status: "active",
-      nextBilling: "2024-12-15",
-      amount: 199,
-    },
-    {
-      id: 2,
-      name: "Lincoln High School",
-      plan: "Standard",
-      users: 210,
-      subscriptionDate: "2024-06-20",
-      status: "active",
-      nextBilling: "2024-12-20",
-      amount: 99,
-    },
-    {
-      id: 3,
-      name: "Oakridge Academy",
-      plan: "Premium",
-      users: 180,
-      subscriptionDate: "2024-04-10",
-      status: "active",
-      nextBilling: "2024-12-10",
-      amount: 199,
-    },
-    {
-      id: 4,
-      name: "Springfield Elementary",
-      plan: "Basic",
-      users: 85,
-      subscriptionDate: "2024-07-05",
-      status: "active",
-      nextBilling: "2024-12-05",
-      amount: 49,
-    },
-    {
-      id: 5,
-      name: "Riverside Prep",
-      plan: "Standard",
-      users: 150,
-      subscriptionDate: "2024-08-12",
-      status: "active",
-      nextBilling: "2024-12-12",
-      amount: 99,
-    },
-    {
-      id: 6,
-      name: "Greenfield School",
-      plan: "Basic",
-      users: 65,
-      subscriptionDate: "2024-09-18",
-      status: "trial",
-      nextBilling: "2024-12-18",
-      amount: 0,
-    },
-    {
-      id: 7,
-      name: "Sunset High",
-      plan: "Standard",
-      users: 175,
-      subscriptionDate: "2024-03-25",
-      status: "overdue",
-      nextBilling: "2024-11-25",
-      amount: 99,
-    },
-  ];
-
-  const subscriptionPlans = [
-    {
-      id: 1,
-      name: "Basic",
-      monthlyPrice: 49,
-      annualPrice: 490,
-      maxTeachers: 20,
-      maxParents: 500,
-      features: [
-        "Student performance tracking",
-        "Attendance management",
-        "Basic announcements",
-        "Email support",
-      ],
-      active: true,
-    },
-    {
-      id: 2,
-      name: "Standard",
-      monthlyPrice: 99,
-      annualPrice: 990,
-      maxTeachers: 50,
-      maxParents: 1500,
-      features: [
-        "All Basic features",
-        "Event calendar",
-        "Document sharing",
-        "Automated notifications",
-        "Priority email support",
-      ],
-      active: true,
-    },
-    {
-      id: 3,
-      name: "Premium",
-      monthlyPrice: 199,
-      annualPrice: 1990,
-      maxTeachers: -1, // Unlimited
-      maxParents: -1, // Unlimited
-      features: [
-        "All Standard features",
-        "Custom branding",
-        "Advanced analytics",
-        "API access",
-        "Dedicated support",
-        "Training sessions",
-      ],
-      active: true,
-    },
   ];
 
   const transactions = [
@@ -276,34 +137,6 @@ export const SchoolAdminDashboard = () => {
     },
   ];
 
-  const filteredSchools = schools.filter(
-    (school) =>
-      school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      school.plan.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleAddSchool = () => {
-    // In a real app, this would be an API call
-    addToast({
-      title: "School Added",
-      description: "The new school has been successfully added.",
-      color: "success",
-    });
-
-    onAddSchoolModalOpenChange(false);
-  };
-
-  const handleAddPlan = () => {
-    // In a real app, this would be an API call
-    addToast({
-      title: "Plan Added",
-      description: "The new subscription plan has been successfully added.",
-      color: "success",
-    });
-
-    onAddPlanModalOpenChange(false);
-  };
-
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -313,13 +146,12 @@ export const SchoolAdminDashboard = () => {
   };
 
   return (
-    <SchoolAdminLayout>
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
             <p className="text-foreground-600">
-              Manage teachers, students, events and subscription
+              Manage schools, subscriptions, and platform analytics
             </p>
           </div>
         </div>
@@ -332,7 +164,7 @@ export const SchoolAdminDashboard = () => {
                   <div>
                     <p className="text-foreground-500">Total Revenue</p>
                     <h3 className="text-3xl font-bold mt-1">
-                      {formatCurrency(3400)}
+                      {formatCurrency(58000)}
                     </h3>
                   </div>
                   <div className="bg-primary-100 p-2 rounded-lg">
@@ -342,22 +174,12 @@ export const SchoolAdminDashboard = () => {
                     />
                   </div>
                 </div>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-foreground-500">Total Students</p>
-                    <h3 className="text-3xl font-bold mt-1">480</h3>
-                  </div>
-                  <div className="bg-success-100 p-2 rounded-lg">
-                    <Icon
-                      icon="lucide:users"
-                      className="text-success text-xl"
-                    />
-                  </div>
+                <div className="mt-4 flex items-center text-sm">
+                  <Icon icon="lucide:arrow-up" className="text-success mr-1" />
+                  <span className="text-success font-medium">12%</span>
+                  <span className="text-foreground-500 ml-1">
+                    from last month
+                  </span>
                 </div>
               </CardBody>
             </Card>
@@ -366,8 +188,32 @@ export const SchoolAdminDashboard = () => {
               <CardBody>
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-foreground-500">Total Teachers</p>
-                    <h3 className="text-3xl font-bold mt-1">32</h3>
+                    <p className="text-foreground-500">Active Schools</p>
+                    <h3 className="text-3xl font-bold mt-1">42</h3>
+                  </div>
+                  <div className="bg-success-100 p-2 rounded-lg">
+                    <Icon
+                      icon="lucide:building"
+                      className="text-success text-xl"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-sm">
+                  <Icon icon="lucide:arrow-up" className="text-success mr-1" />
+                  <span className="text-success font-medium">8%</span>
+                  <span className="text-foreground-500 ml-1">
+                    from last month
+                  </span>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardBody>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-foreground-500">Total Users</p>
+                    <h3 className="text-3xl font-bold mt-1">675</h3>
                   </div>
                   <div className="bg-primary-100 p-2 rounded-lg">
                     <Icon
@@ -376,6 +222,13 @@ export const SchoolAdminDashboard = () => {
                     />
                   </div>
                 </div>
+                <div className="mt-4 flex items-center text-sm">
+                  <Icon icon="lucide:arrow-up" className="text-success mr-1" />
+                  <span className="text-success font-medium">15%</span>
+                  <span className="text-foreground-500 ml-1">
+                    from last month
+                  </span>
+                </div>
               </CardBody>
             </Card>
 
@@ -383,17 +236,24 @@ export const SchoolAdminDashboard = () => {
               <CardBody>
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-foreground-500">Upcoming Events</p>
+                    <p className="text-foreground-500">Avg. Subscription</p>
                     <h3 className="text-3xl font-bold mt-1">
-                    4
+                      {formatCurrency(115)}
                     </h3>
                   </div>
                   <div className="bg-warning-100 p-2 rounded-lg">
                     <Icon
-                      icon="lucide:calendar"
+                      icon="lucide:credit-card"
                       className="text-warning text-xl"
                     />
                   </div>
+                </div>
+                <div className="mt-4 flex items-center text-sm">
+                  <Icon icon="lucide:arrow-up" className="text-success mr-1" />
+                  <span className="text-success font-medium">5%</span>
+                  <span className="text-foreground-500 ml-1">
+                    from last month
+                  </span>
                 </div>
               </CardBody>
             </Card>
@@ -549,8 +409,8 @@ export const SchoolAdminDashboard = () => {
                       />
                       <Bar
                         dataKey="parents"
-                        name="Students"
-                        fill="#17c964"
+                        name="Parents"
+                        fill="#06b6d4"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
@@ -559,8 +419,118 @@ export const SchoolAdminDashboard = () => {
               </CardBody>
             </Card>
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardBody>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Plan Distribution</h3>
+                </div>
+
+                <div className="h-64 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={planDistributionData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
+                      >
+                        {planDistributionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => [`${value}%`, "Percentage"]}
+                        contentStyle={{
+                          borderRadius: "8px",
+                          border: "none",
+                          boxShadow: "0 4px 14px 0 rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  {planDistributionData.map((plan, index) => (
+                    <div key={index} className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: plan.color }}
+                        ></div>
+                        <span className="font-medium">{plan.name}</span>
+                      </div>
+                      <p className="text-sm text-foreground-500">
+                        {plan.value}%
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardBody>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Recent Transactions</h3>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    endContent={<Icon icon="lucide:arrow-right" />}
+                  >
+                    View All
+                  </Button>
+                </div>
+
+                <Table removeWrapper aria-label="Recent transactions table">
+                  <TableHeader>
+                    <TableColumn>SCHOOL</TableColumn>
+                    <TableColumn>DATE</TableColumn>
+                    <TableColumn>AMOUNT</TableColumn>
+                    <TableColumn>PLAN</TableColumn>
+                    <TableColumn>STATUS</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.slice(0, 5).map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>{transaction.school}</TableCell>
+                        <TableCell>
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency(transaction.amount)}
+                        </TableCell>
+                        <TableCell>{transaction.plan}</TableCell>
+                        <TableCell>
+                          <Chip
+                            color={
+                              transaction.status === "completed"
+                                ? "success"
+                                : transaction.status === "pending"
+                                ? "warning"
+                                : "danger"
+                            }
+                            size="sm"
+                          >
+                            {transaction.status}
+                          </Chip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardBody>
+            </Card>
+          </div>
         </div>
       </div>
-    </SchoolAdminLayout>
   );
 };

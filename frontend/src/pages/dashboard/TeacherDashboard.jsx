@@ -27,7 +27,6 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import TeacherLayout from "./TeacherLayout";
 
 export const TeacherDashboard = () => {
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -248,7 +247,7 @@ export const TeacherDashboard = () => {
   };
 
   return (
-    <TeacherLayout>
+    <>
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
@@ -1000,6 +999,6 @@ export const TeacherDashboard = () => {
           )}
         </ModalContent>
       </Modal>
-    </TeacherLayout>
+    </>
   );
 };

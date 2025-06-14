@@ -16,6 +16,7 @@
     "@heroui/toast": "^2.0.9",
     "@heroui/use-theme": "^2.1.6",
     "@iconify/react": "latest",
+    "@internationalized/date": "^3.8.2",
     "@mui/material": "^7.1.1",
     "axios": "^1.9.0",
     "react": "^19.1.0",

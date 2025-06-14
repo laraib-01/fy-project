@@ -7,30 +7,40 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  DateInput,
   Input,
-  TimeInput,
   ModalFooter,
-  DatePicker,
   Button,
+  Textarea,
+  Spinner,
   ToastProvider,
+  TimeInput,
+  DatePicker,
+  DateInput,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
 import axios from "axios";
-import TeacherLayout from "../components/teacher/TeacherLayout";
+import eventsService from "../services/eventsService";
 
 export const Events = () => {
+  const [events, setEvents] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [eventTitle, setEventTitle] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [eventTime, setEventTime] = useState("");
-  const [eventLocation, setEventLocation] = useState("");
+  // Form state
+  const [formData, setFormData] = useState({
+    event_name: "",
+    event_date: null,
+    event_time: "",
+    event_location: "",
+    description: "",
+  });
+
+  console.log(formData)
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentEventId, setCurrentEventId] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const {
     isOpen: isEventModalOpen,
@@ -41,18 +51,22 @@ export const Events = () => {
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("educonnect_token");
-      const response = await axios.get("http://localhost:5000/api/events", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await eventsService.getEvents({
+        school_id: localStorage.getItem("educonnect_school_id"),
+        status: "past",
+        limit: 5,
+        page: 1,
       });
-      setUpcomingEvents(response.data.events);
+
+      if (response && response.data) {
+        setEvents(response.data.events || []);
+        setUpcomingEvents(response.data.events || []);
+      }
     } catch (error) {
       console.error("Error fetching events:", error);
       addToast({
         title: "Error",
-        description: "Unable to load events.",
+        description: error.message || "Unable to load events",
         status: "error",
       });
     } finally {
@@ -65,67 +79,57 @@ export const Events = () => {
   }, []);
 
   const resetForm = () => {
-    setEventTitle("");
-    setEventDate("");
-    setEventTime("");
-    setEventLocation("");
+    setFormData({
+      event_name: "",
+      event_date: null,
+      event_time: "",
+      event_location: "",
+      description: "",
+    });
     setIsEditing(false);
     setCurrentEventId(null);
   };
 
-  const handlePostEvent = async () => {
-    if (!eventTitle || !eventDate || !eventTime || !eventLocation) {
+  const handleInputChange = (key, value) => {
+    
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (
+      !formData.event_name ||
+      !formData.event_date ||
+      !formData.event_time ||
+      !formData.event_location
+    ) {
       addToast({
         title: "Missing Information",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         status: "warning",
       });
       return;
     }
 
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem("educonnect_token");
-
-      // Format date for API
-      const formattedDate = eventDate.toString();
-
-      // Format time for API
-      const formattedTime = `${eventTime.hour
-        .toString()
-        .padStart(2, "0")}:${eventTime.minute.toString().padStart(2, "0")}`;
-
-      const payload = {
-        title: eventTitle,
-        date: formattedDate,
-        time: formattedTime,
-        location: eventLocation,
-      };
+      setIsSubmitting(true);
 
       if (isEditing && currentEventId) {
-        await axios.put(
-          `http://localhost:5000/api/events/${currentEventId}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        await eventsService.updateEvent(currentEventId, formData);
         addToast({
-          title: "Updated",
-          description: "Event updated successfully.",
+          title: "Success",
+          description: "Event updated successfully",
           status: "success",
         });
       } else {
-        await axios.post("http://localhost:5000/api/save-event", payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await eventsService.createEvent(formData);
         addToast({
           title: "Success",
-          description: "Event added successfully.",
+          description: "Event created successfully",
           status: "success",
         });
       }
@@ -134,27 +138,28 @@ export const Events = () => {
       resetForm();
       fetchEvents();
     } catch (error) {
-      console.error("Error submitting event:", error);
+      console.error("Error saving event:", error);
       addToast({
         title: "Error",
-        description: "Unable to submit event.",
+        description: error.message || "Failed to save event",
         status: "error",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteEvent = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) {
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("educonnect_token");
-      await axios.delete(`http://localhost:5000/api/events/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await eventsService.deleteEvent(id);
       addToast({
-        title: "Deleted",
-        description: "Event deleted successfully.",
+        title: "Success",
+        description: "Event deleted successfully",
         status: "success",
       });
       fetchEvents();
@@ -162,7 +167,7 @@ export const Events = () => {
       console.error("Error deleting event:", error);
       addToast({
         title: "Error",
-        description: "Unable to delete event.",
+        description: error.message || "Failed to delete event",
         status: "error",
       });
     } finally {
@@ -171,30 +176,48 @@ export const Events = () => {
   };
 
   const handleEditEvent = (event) => {
-    setEventTitle(event.title);
-
-    // Parse the date string from the API
-    try {
-      setEventDate(event.date);
-    } catch (e) {
-      console.error("Error parsing date:", e);
-      setEventDate(null);
-    }
-
-    // Parse the time string from the API
-    try {
-      const [hours, minutes] = event.time.split(":").map(Number);
-      setEventTime(new Time(hours, minutes));
-    } catch (e) {
-      console.error("Error parsing time:", e);
-      setEventTime(null);
-    }
-
-    setEventLocation(event.location);
-    setCurrentEventId(event.id);
+    setFormData({
+      event_name: event.event_name,
+      event_date: event.event_date,
+      event_time: event.event_time,
+      event_location: event.event_location,
+      description: event.description || "",
+    });
+    setCurrentEventId(event.event_id);
     setIsEditing(true);
     onEventModalOpen();
   };
+
+  const formatDateTime = (dateStr, timeStr) => {
+    try {
+      const date = new Date(dateStr);
+      const time = timeStr ? new Date(`1970-01-01T${timeStr}`) : null;
+
+      const options = {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      };
+
+      const formattedDate = date.toLocaleDateString(undefined, options);
+      const formattedTime = time
+        ? time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "";
+
+      return `${formattedDate}${formattedTime ? " at " + formattedTime : ""}`;
+    } catch (e) {
+      console.error("Error formatting date/time:", e);
+      return "Invalid date";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -319,35 +342,35 @@ export const Events = () => {
                 <Input
                   label="Title"
                   placeholder="Enter event title"
-                  value={eventTitle}
-                  onValueChange={setEventTitle}
+                  value={formData?.event_name}
+                  onChange={(value) => handleInputChange("event_name", value)}
                   isRequired
                 />
-                <Input
-                  type="date"
+                <Textarea
+                  label="Description"
+                  placeholder="Enter event description"
+                  value={formData?.event_description}
+                  onChange={(value) => handleInputChange("event_description", value)}
+                  isRequired
+                />
+                <DateInput
                   label="Date"
                   placeholder="Enter event date"
-                  value={eventDate}
-                  onValueChange={setEventDate}
+                  value={formData?.event_date}
+                  onChange={(value) => handleInputChange("event_date", value)}
                   isRequired
                 />
-                {/* <DatePicker
-                  label="Date"
-                  value={eventDate}
-                  onChange={setEventDate}
-                  isRequired
-                /> */}
                 <TimeInput
                   label="Time"
-                  value={eventTime}
-                  onChange={setEventTime}
+                  value={formData?.event_time}
+                  onChange={(value) => handleInputChange("event_time", value)}
                   isRequired
                 />
                 <Input
                   label="Location"
                   placeholder="Enter event location"
-                  value={eventLocation}
-                  onValueChange={setEventLocation}
+                  value={formData?.event_location}
+                  onChange={(value) => handleInputChange("event_location", value)}
                   isRequired
                 />
               </ModalBody>
@@ -363,7 +386,7 @@ export const Events = () => {
                 </Button>
                 <Button
                   color="primary"
-                  onPress={handlePostEvent}
+                  // onPress={handlePostEvent}
                   isLoading={isLoading}
                 >
                   {isEditing ? "Update Event" : "Post Event"}

@@ -12,58 +12,53 @@ import {
 import { Icon } from "@iconify/react";
 import axios from "axios";
 import { addToast, ToastProvider } from "@heroui/toast";
-import { Footer } from "../components/Footer";
-import { Navbar } from "../components/Navbar";
+import { Footer } from "../../components/Footer";
+import { Navbar } from "../../components/Navbar";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+    setIsLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/login", {
-        email,
-        password,
-      });
+      const res = await login(email, password, rememberMe);
 
-      const { data } = res?.data;
-      console.log("res", res);
-      if (res?.data?.status === "success") {
+      if (res?.status === "success") {
         localStorage.setItem("educonnect_token", res.data.token);
-        localStorage.setItem("educonnect_role", data?.user?.role);
+        localStorage.setItem("educonnect_role", res?.data?.user?.role);
         addToast({
-          title: res?.data?.message,
+          title: res?.message,
           color: "success",
-          hideIcon: true,
         });
         setTimeout(() => {
-          if (data?.user?.role === "Parent") {
+          if (res?.data?.user?.role === "Parent") {
             navigate("/parent");
-          } else if (data?.user?.role === "Teacher") {
+          } else if (res?.data?.user?.role === "Teacher") {
             navigate("/teacher");
-          } else if (data?.user?.role === "School_Admin") {
+          } else if (res?.data?.user?.role === "School_Admin") {
             navigate("/school");
-          } else if (data?.user?.role === "EduConnect_Admin") {
+          } else if (res?.data?.user?.role === "EduConnect_Admin") {
             navigate("/admin");
           }
-          setIsLoading(false);
         }, 1500);
       }
     } catch (error) {
-      console.error("Login failed:", error);
       addToast({
-        title: error?.response?.data?.message,
+        title: error?.message,
         color: "danger",
       });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -90,7 +85,7 @@ export const Login = () => {
                 </div>
               )}
 
-              <form onSubmit={handleLogin}>
+              <form onSubmit={handleLogin} disabled={isLoading}>
                 <div className="space-y-4">
                   <Input
                     type="email"

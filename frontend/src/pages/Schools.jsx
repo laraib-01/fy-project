@@ -28,7 +28,6 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import { AdminLayout } from "../components/admin/AdminLayout";
 import axios from "axios";
 
 export const Schools = () => {
@@ -120,7 +119,18 @@ export const Schools = () => {
       const response = await axios.get("http://localhost:5000/api/schools", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setSchools(response.data?.schools || []);
+      if (response.data?.status === "error") {
+        addToast({
+          title: "Error",
+          description: response.data?.message,
+          color: "error",
+          hideIcon: true,
+        });
+        return;
+      }
+      const { data } = response.data;
+      console.log(data);
+      setSchools(data?.schools || []);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching schools:", error);
@@ -238,7 +248,6 @@ export const Schools = () => {
 
       fetchSchools();
       onDeleteSchoolModalOpenChange(false);
-      
     } catch (error) {
       console.error("Delete failed:", error);
       addToast({
@@ -252,7 +261,7 @@ export const Schools = () => {
 
   const filteredSchools = schools.filter(
     (school) =>
-      school?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      school?.school_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school?.plan?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -265,7 +274,7 @@ export const Schools = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <ToastProvider placement="bottom-center" toastOffset={0} />
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -302,9 +311,6 @@ export const Schools = () => {
             <Table removeWrapper aria-label="Schools table">
               <TableHeader>
                 <TableColumn>SCHOOL NAME</TableColumn>
-                {/* <TableColumn>SCHOOL EMAIL</TableColumn>
-                <TableColumn>PHONE NUMBER</TableColumn>
-                <TableColumn>ADMIN NAME</TableColumn> */}
                 <TableColumn>PLAN</TableColumn>
                 <TableColumn>USERS</TableColumn>
                 <TableColumn>SUBSCRIPTION DATE</TableColumn>
@@ -315,9 +321,9 @@ export const Schools = () => {
               <TableBody>
                 {filteredSchools.map((school) => (
                   <TableRow key={school.school_id}>
-                    <TableCell>{school.name}</TableCell>
+                    <TableCell>{school.school_name}</TableCell>
                     <TableCell>{school.plan_type}</TableCell>
-                    <TableCell>{school.users}</TableCell>
+                    <TableCell>{school.users.length}</TableCell>
                     <TableCell>
                       {new Date(school.start_date).toLocaleDateString()}
                     </TableCell>
@@ -326,9 +332,9 @@ export const Schools = () => {
                         <span>
                           {new Date(school.end_date).toLocaleDateString()}
                         </span>
-                        <span className="text-xs text-foreground-500">
+                        {/* <span className="text-xs text-foreground-500">
                           {formatCurrency(school.amount)}/month
-                        </span>
+                        </span> */}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -574,6 +580,6 @@ export const Schools = () => {
           )}
         </ModalContent>
       </Modal>
-    </AdminLayout>
+    </>
   );
-}
+};

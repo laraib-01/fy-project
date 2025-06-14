@@ -27,7 +27,6 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import TeacherLayout from "../components/teacher/TeacherLayout";
 
 export const Assignments = () => {
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -248,70 +247,65 @@ export const Assignments = () => {
   };
 
   return (
-    <TeacherLayout>
-      <div className="p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Assignments</h1>
-            <p className="text-foreground-600">Manage your assignments</p>
-          </div>
-
-          <Button color="primary" startContent={<Icon icon="lucide:plus" />}>
-            Create Assignment
-          </Button>
+    <div className="p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Assignments</h1>
+          <p className="text-foreground-600">Manage your assignments</p>
         </div>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {assignments.map((assignment) => (
-              <Card key={assignment.id}>
-                <CardBody>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="text-lg font-medium">
-                        {assignment.title}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-foreground-500">
-                        <span>
-                          Due:{" "}
-                          {new Date(assignment.dueDate).toLocaleDateString()}
-                        </span>
-                        <span>•</span>
-                        <Chip size="sm" variant="flat">
-                          {assignment.class}
-                        </Chip>
-                      </div>
-                    </div>
-                    <Chip
-                      color={
-                        assignment.status === "active" ? "primary" : "success"
-                      }
-                      size="sm"
-                    >
-                      {assignment.status === "active" ? "Active" : "Completed"}
-                    </Chip>
-                  </div>
-                  <p className="mt-3 text-foreground-700">
-                    {assignment.description}
-                  </p>
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="text-sm text-foreground-500">
-                      <span>Submissions: 12/24</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="flat">
-                        View Submissions
-                      </Button>
-                      <Button size="sm" variant="flat" isIconOnly>
-                        <Icon icon="lucide:more-vertical" />
-                      </Button>
+
+        <Button color="primary" startContent={<Icon icon="lucide:plus" />}>
+          Create Assignment
+        </Button>
+      </div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {assignments.map((assignment) => (
+            <Card key={assignment.id}>
+              <CardBody>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-lg font-medium">{assignment.title}</h4>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-foreground-500">
+                      <span>
+                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                      </span>
+                      <span>•</span>
+                      <Chip size="sm" variant="flat">
+                        {assignment.class}
+                      </Chip>
                     </div>
                   </div>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
+                  <Chip
+                    color={
+                      assignment.status === "active" ? "primary" : "success"
+                    }
+                    size="sm"
+                  >
+                    {assignment.status === "active" ? "Active" : "Completed"}
+                  </Chip>
+                </div>
+                <p className="mt-3 text-foreground-700">
+                  {assignment.description}
+                </p>
+                <div className="flex justify-between items-center mt-4">
+                  <div className="text-sm text-foreground-500">
+                    <span>Submissions: 12/24</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="flat">
+                      View Submissions
+                    </Button>
+                    <Button size="sm" variant="flat" isIconOnly>
+                      <Icon icon="lucide:more-vertical" />
+                    </Button>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
         </div>
       </div>
-    </TeacherLayout>
+    </div>
   );
 };

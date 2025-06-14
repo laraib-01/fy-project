@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Navbar,
@@ -14,33 +14,33 @@ import {
   Badge,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useAuth } from "../contexts/AuthContext";
 
-const TeacherLayout = ({ children }) => {
+export const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const { user, logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleLogout = () => {
-    localStorage.removeItem("educonnect_token");
-    localStorage.removeItem("educonnect_role");
-    window.location.href = "/login";
+    logout();
   };
 
   const sidebarItems = [
-    { name: "Dashboard", icon: "lucide:layout-dashboard", path: "/teacher" },
-    { name: "Students", icon: "lucide:users", path: "/teacher/students" },
-    // { name: "Classes", icon: "lucide:book-open", path: "/teacher/classes" },
+    { name: "Dashboard", icon: "lucide:layout-dashboard", path: "/admin" },
+    { name: "Schools", icon: "lucide:building", path: "/admin/schools" },
     {
-      name: "Assignments",
-      icon: "lucide:file-text",
-      path: "/teacher/assignments",
+      name: "Subscriptions",
+      icon: "lucide:credit-card",
+      path: "/admin/subscriptions",
     },
     {
-      name: "Announcements",
-      icon: "lucide:megaphone",
-      path: "/teacher/announcements",
+      name: "Transactions",
+      icon: "lucide:receipt",
+      path: "/admin/transactions",
     },
-    { name: "Events", icon: "lucide:calendar", path: "/teacher/events" },
+    { name: "Reports", icon: "lucide:bar-chart-2", path: "/admin/reports" },
+    { name: "Settings", icon: "lucide:settings", path: "/admin/settings" },
   ];
 
   return (
@@ -53,7 +53,7 @@ const TeacherLayout = ({ children }) => {
       >
         <div className="p-4 flex items-center justify-between border-b border-divider h-16">
           {isSidebarOpen ? (
-            <Link to="/teacher" className="flex items-center gap-2">
+            <Link to="/admin" className="flex items-center gap-2">
               <Icon icon="lucide:book-open" className="text-primary text-xl" />
               <span className="font-bold text-lg">EduConnect</span>
             </Link>
@@ -149,7 +149,7 @@ const TeacherLayout = ({ children }) => {
               <Button variant="light" isIconOnly className="relative">
                 <Icon icon="lucide:bell" />
                 <Badge
-                  content="5"
+                  content="7"
                   color="danger"
                   size="sm"
                   className="absolute -top-1 -right-1"
@@ -160,20 +160,27 @@ const TeacherLayout = ({ children }) => {
               <DropdownTrigger>
                 <Button variant="light" className="flex items-center gap-2">
                   <Avatar
-                    name="Sarah Ahmed"
+                    name="Admin User"
                     size="sm"
-                    src="https://img.heroui.chat/image/avatar?w=200&h=200&u=teacher"
+                    src="https://img.heroui.chat/image/avatar?w=200&h=200&u=admin"
                   />
-                  {isSidebarOpen ? null : <span>Sarah Ahmed</span>}
+                  {isSidebarOpen ? null : <span>Admin User</span>}
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="User Actions">
                 <DropdownItem
                   key="profile"
                   startContent={<Icon icon="lucide:user" />}
-                  onPress={() => navigate("/teacher/profile")}
+                  onPress={() => navigate("/admin/profile")}
                 >
                   My Profile
+                </DropdownItem>
+                <DropdownItem
+                  key="settings"
+                  startContent={<Icon icon="lucide:settings" />}
+                  onPress={() => navigate("/admin/settings")}
+                >
+                  Settings
                 </DropdownItem>
                 <DropdownItem
                   key="logout"
@@ -194,5 +201,3 @@ const TeacherLayout = ({ children }) => {
     </div>
   );
 };
-
-export default TeacherLayout;

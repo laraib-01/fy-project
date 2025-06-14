@@ -11,17 +11,18 @@ import {
   NavbarMenuItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useAuth } from "../contexts/AuthContext";
 
 export const Navbar = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   // Check if user is logged in
-  const isLoggedIn = localStorage.getItem("educonnect_token") !== null;
-  const userRole = localStorage.getItem("educonnect_role");
+  const { user, logout } = useAuth();
+  const isLoggedIn = user !== null;
 
   const getDashboardLink = () => {
-    switch (userRole) {
+    switch (user?.role) {
       case "Teacher":
         return "/teacher";
       case "Parent":
@@ -36,9 +37,7 @@ export const Navbar = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("educonnect_token");
-    localStorage.removeItem("educonnect_role");
-    window.location.href = "/";
+    logout();
   };
 
   const menuItems = [

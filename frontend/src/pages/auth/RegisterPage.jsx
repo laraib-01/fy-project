@@ -12,13 +12,15 @@ import {
   Spacer,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Navbar } from "../components/Navbar";
-import { Footer } from "../components/Footer";
+import { Navbar } from "../../components/Navbar";
+import { Footer } from "../../components/Footer";
 import axios from "axios";
-import {addToast, ToastProvider} from "@heroui/toast";
+import { addToast, ToastProvider } from "@heroui/toast";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,8 +29,8 @@ export const RegisterPage = () => {
   const [role, setRole] = useState("Parent");
   const [schoolName, setSchoolName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -59,52 +61,54 @@ export const RegisterPage = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
+    setIsLoading(true);
     if (!validate()) return;
 
-    setIsLoading(true);
-
     try {
-      const res = await axios.post("http://localhost:5000/api/register", {
+      const res = await register({
         name: `${firstName} ${lastName}`,
         email: email,
         password: password,
         role: role,
       });
-      if (res?.data?.status === "success") {
+      if (res?.status === "success") {
         addToast({
-          title: res?.data?.message,
+          title: res?.message,
           color: "success",
-          hideIcon: true,
         });
 
         setTimeout(() => {
-          navigate("/login");
-          setIsLoading(false);
+          if (res?.data?.user?.role === "Parent") {
+            navigate("/parent");
+          } else if (res?.data?.user?.role === "Teacher") {
+            navigate("/teacher");
+          } else if (res?.data?.user?.role === "School_Admin") {
+            navigate("/school");
+          } else if (res?.data?.user?.role === "EduConnect_Admin") {
+            navigate("/admin");
+          }
         }, 1500);
       } else {
-        console.log(res?.data);
+        console.error(res?.message);
         addToast({
-          title: res?.data?.message,
+          title: res?.message,
           color: "danger",
-          hideIcon: true,
         });
       }
     } catch (error) {
-      setIsLoading(false);
+      console.error(error);
       addToast({
-        title: error?.response?.data?.message,
+        title: error?.message,
         color: "danger",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <>
-      <ToastProvider
-        placement="bottom-center"
-        toastOffset={0}
-      />
+      <ToastProvider placement="bottom-center" toastOffset={0} />
       <div className="min-h-screen flex flex-col">
         <Navbar />
 

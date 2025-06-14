@@ -20,7 +20,7 @@ import {
   Avatar,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import ParentLayout from "./ParentLayout";
+import ParentLayout from "../../layouts/ParentLayout";
 
 export const ParentDashboard = () => {
   const [selectedTab, setSelectedTab] = useState("overview");
