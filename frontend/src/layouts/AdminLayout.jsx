@@ -14,16 +14,15 @@ import {
   Badge,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { useAuth } from "../contexts/AuthContext";
+import authService from "../services/authService";
 
 export const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleLogout = () => {
-    logout();
+    authService.logout();
   };
 
   const sidebarItems = [

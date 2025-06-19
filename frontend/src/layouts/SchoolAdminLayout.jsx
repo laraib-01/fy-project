@@ -29,6 +29,7 @@ export const SchoolAdminLayout = ({ children }) => {
   const sidebarItems = [
     { name: "Dashboard", icon: "lucide:layout-dashboard", path: "/school" },
     { name: "Teachers", icon: "lucide:users", path: "/school/teachers" },
+    { name: "Classes", icon: "la:school", path: "/school/classes" },
     { name: "Students", icon: "lucide:graduation-cap", path: "/school/students" },
     { name: "Events", icon: "lucide:calendar", path: "/school/events" },
     { name: "Reports", icon: "lucide:bar-chart-2", path: "/school/reports" },

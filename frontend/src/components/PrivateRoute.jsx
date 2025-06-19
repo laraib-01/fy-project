@@ -1,16 +1,17 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 
 export const PrivateRoute = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated } = useAuth();
+  const isAuthenticated = localStorage.getItem("educonnect_token") !== null;
 
-  if (!isAuthenticated) {
+  const userRole = localStorage.getItem("educonnect_role");
+
+  if (!isAuthenticated || !userRole) {
     return <Navigate to="/login" />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" />;
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/login" />;
   }
 
   return children;

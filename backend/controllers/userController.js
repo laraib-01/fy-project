@@ -167,6 +167,19 @@ export const login = async (req, res) => {
   }
 };
 
+export const logout = async (req, res) => {
+  try {
+    // Since JWT is stateless, we can't invalidate the token on the server side
+    // The client should remove the token from their storage
+    return res.status(200).json({
+      status: "success",
+      message: "Logout successful"
+    });
+  } catch (error) {
+    return handleError(res, 500, "Logout failed");
+  }
+};
+
 export const getProfile = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM users WHERE user_id = ?", [

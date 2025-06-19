@@ -28,6 +28,7 @@ import {
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
 import axios from "axios";
+import classService from "../services/classService";
 
 export const Students = () => {
   const [classes, setClasses] = useState([]);
@@ -36,22 +37,29 @@ export const Students = () => {
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch classes assigned to the teacher
+  // Fetch all classes from the school using classService
   const fetchClasses = async () => {
     try {
-      const token = localStorage.getItem("educonnect_token");
-      const response = await axios.get("http://localhost:5000/api/classes", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setClasses(response.data?.classes || []);
-      if (response.data?.classes?.length > 0) {
-        setSelectedClass(response.data[0].id); // select first class by default
+      const response = await classService.getSchoolClasses();
+      
+      // Transform the response to match the expected format
+      const formattedClasses = response?.data?.classes?.map(cls => ({
+        id: cls.class_id,
+        name: cls.class_name,
+        ...cls
+      })) || [];
+      
+      setClasses(formattedClasses);
+      
+      // Select first class by default if available
+      if (formattedClasses.length > 0) {
+        setSelectedClass(formattedClasses[0].id);
       }
     } catch (error) {
-      console.error("Error fetching classes:", error);
+      console.error("Error fetching school classes:", error);
       addToast({
         title: "Error",
-        description: "Unable to load classes.",
+        description: error.response?.data?.message || "Unable to load school classes.",
         status: "error",
       });
     }
@@ -63,16 +71,23 @@ export const Students = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("educonnect_token");
-      const response = await axios.post(
-        `http://localhost:5000/api/students/${selectedClass}`,
-        {},
+      const response = await axios.get(
+        `http://localhost:5000/api/students/class/${selectedClass}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      setStudents(response.data);
+      
+      // Transform the response to match the expected format
+      const formattedStudents = response.data?.data?.students?.map(student => ({
+        id: student.student_id,
+        name: student.name,
+        ...student
+      })) || [];
+      
+      setStudents(formattedStudents);
     } catch (error) {
       console.error("Error fetching students:", error);
       addToast({

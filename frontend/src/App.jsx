@@ -14,7 +14,6 @@ import { AdminSettings } from "./pages/AdminSettings";
 import { TeacherProfile } from "./pages/TeacherProfile";
 import { TeacherLayout } from "./layouts/TeacherLayout";
 import { SchoolAdminLayout } from "./layouts/SchoolAdminLayout";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Subscriptions } from "./pages/subscriptions/Subscriptions";
 import { Transactions } from "./pages/transactions/Transactions";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -23,18 +22,10 @@ import ParentLayout from "./layouts/ParentLayout";
 import { ParentDashboard } from "./pages/dashboard/ParentDashboard";
 import { SchoolAdminDashboard } from "./pages/dashboard/SchoolAdminDashboard";
 import { AdminDashboard } from "./pages/dashboard/AdminDashboard";
+import { Classes } from "./pages/classes/Classes";
+import { Teachers } from "./pages/teachers/Teachers";
 
 const AppWrapper = () => {
-  const { loading, isAuthenticated } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* <LoadingSpinner size="xl" /> */}
-      </div>
-    );
-  }
-
   return (
     <Routes>
       <Route exact path="/" element={<LandingPage />} />
@@ -120,6 +111,27 @@ const AppWrapper = () => {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/school/teachers"
+        element={
+          <PrivateRoute allowedRoles={["School_Admin"]}>
+            <SchoolAdminLayout>
+              <Teachers />
+            </SchoolAdminLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/school/classes"
+        element={
+          <PrivateRoute allowedRoles={["School_Admin"]}>
+            <SchoolAdminLayout>
+              <Classes />
+            </SchoolAdminLayout>
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/school/students"
         element={
@@ -219,9 +231,7 @@ const AppWrapper = () => {
 
 const App = () => (
   <Router>
-    <AuthProvider>
-      <AppWrapper />
-    </AuthProvider>
+    <AppWrapper />
   </Router>
 );
 

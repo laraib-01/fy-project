@@ -19,7 +19,11 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import axios from "axios";
+import {
+  parseDate,
+  parseTime,
+  parseZonedDateTime,
+} from "@internationalized/date";
 import eventsService from "../services/eventsService";
 
 export const Events = () => {
@@ -32,12 +36,12 @@ export const Events = () => {
   const [formData, setFormData] = useState({
     event_name: "",
     event_date: null,
-    event_time: "",
+    event_time: null,
     event_location: "",
     description: "",
   });
 
-  console.log(formData)
+  console.log(formData);
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentEventId, setCurrentEventId] = useState(null);
@@ -48,26 +52,31 @@ export const Events = () => {
     onOpenChange: onEventModalOpenChange,
   } = useDisclosure();
 
+  const {
+    isOpen: isDeleteEventModalOpen,
+    onOpen: onDeleteEventModalOpen,
+    onOpenChange: onDeleteEventModalOpenChange,
+  } = useDisclosure();
+
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
       const response = await eventsService.getEvents({
         school_id: localStorage.getItem("educonnect_school_id"),
-        status: "past",
+        status: "upcoming",
         limit: 5,
         page: 1,
       });
 
-      if (response && response.data) {
-        setEvents(response.data.events || []);
-        setUpcomingEvents(response.data.events || []);
-      }
+      console.log("response", response);
+
+      setEvents(response?.events || []);
+      setUpcomingEvents(response?.events || []);
     } catch (error) {
       console.error("Error fetching events:", error);
       addToast({
-        title: "Error",
         description: error.message || "Unable to load events",
-        status: "error",
+        color: "error",
       });
     } finally {
       setIsLoading(false);
@@ -82,7 +91,7 @@ export const Events = () => {
     setFormData({
       event_name: "",
       event_date: null,
-      event_time: "",
+      event_time: null,
       event_location: "",
       description: "",
     });
@@ -91,46 +100,70 @@ export const Events = () => {
   };
 
   const handleInputChange = (key, value) => {
-    
     setFormData((prev) => ({
       ...prev,
       [key]: value,
     }));
   };
 
+  function formatDate(date) {
+    return `${date.year}-${String(date.month).padStart(2, "0")}-${String(
+      date.day
+    ).padStart(2, "0")}`;
+  }
+
+  function formatTime(time) {
+    return `${String(time.hour).padStart(2, "0")}:${String(
+      time.minute
+    ).padStart(2, "0")}:${String(time.second).padStart(2, "0")}.${String(
+      time.millisecond
+    ).padStart(3, "0")}`;
+  }
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
     if (
       !formData.event_name ||
       !formData.event_date ||
       !formData.event_time ||
+      !formData.description ||
       !formData.event_location
     ) {
       addToast({
-        title: "Missing Information",
         description: "Please fill in all required fields",
-        status: "warning",
+        color: "warning",
       });
       return;
     }
+
+    const formattedDate = formatDate(formData.event_date);
+    const formattedTime = formatTime(formData.event_time);
+
+    const payload = {
+      event_name: formData.event_name,
+      event_date: formattedDate,
+      event_time: formattedTime,
+      description: formData.description,
+      event_location: formData.event_location,
+    };
 
     try {
       setIsSubmitting(true);
 
       if (isEditing && currentEventId) {
-        await eventsService.updateEvent(currentEventId, formData);
+        await eventsService.updateEvent(currentEventId, payload);
         addToast({
-          title: "Success",
           description: "Event updated successfully",
-          status: "success",
+          color: "success",
         });
       } else {
-        await eventsService.createEvent(formData);
+        await eventsService.createEvent(payload);
         addToast({
-          title: "Success",
           description: "Event created successfully",
-          status: "success",
+          color: "success",
         });
       }
 
@@ -140,35 +173,29 @@ export const Events = () => {
     } catch (error) {
       console.error("Error saving event:", error);
       addToast({
-        title: "Error",
         description: error.message || "Failed to save event",
-        status: "error",
+        color: "error",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteEvent = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this event?")) {
-      return;
-    }
-
+  const handleDeleteEvent = async () => {
     try {
       setIsLoading(true);
-      await eventsService.deleteEvent(id);
+      await eventsService.deleteEvent(currentEventId);
       addToast({
-        title: "Success",
         description: "Event deleted successfully",
-        status: "success",
+        color: "success",
       });
       fetchEvents();
+      onDeleteEventModalOpenChange(false);
     } catch (error) {
       console.error("Error deleting event:", error);
       addToast({
-        title: "Error",
         description: error.message || "Failed to delete event",
-        status: "error",
+        color: "error",
       });
     } finally {
       setIsLoading(false);
@@ -176,39 +203,29 @@ export const Events = () => {
   };
 
   const handleEditEvent = (event) => {
+    let parsedDate, parsedTime;
+
+    try {
+      // Attempt to parse the full ISO string
+      const zonedDateTime = parseZonedDateTime(event.event_date);
+      parsedDate = zonedDateTime.toCalendarDate();
+      parsedTime = zonedDateTime.toTime();
+    } catch (error) {
+      // Fallback to separate parsing if full ISO string fails
+      parsedDate = parseDate(event.event_date.split("T")[0]);
+      parsedTime = parseTime(event.event_time);
+    }
+
     setFormData({
       event_name: event.event_name,
-      event_date: event.event_date,
-      event_time: event.event_time,
+      event_date: parsedDate,
+      event_time: parsedTime,
       event_location: event.event_location,
       description: event.description || "",
     });
     setCurrentEventId(event.event_id);
     setIsEditing(true);
     onEventModalOpen();
-  };
-
-  const formatDateTime = (dateStr, timeStr) => {
-    try {
-      const date = new Date(dateStr);
-      const time = timeStr ? new Date(`1970-01-01T${timeStr}`) : null;
-
-      const options = {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      };
-
-      const formattedDate = date.toLocaleDateString(undefined, options);
-      const formattedTime = time
-        ? time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : "";
-
-      return `${formattedDate}${formattedTime ? " at " + formattedTime : ""}`;
-    } catch (e) {
-      console.error("Error formatting date/time:", e);
-      return "Invalid date";
-    }
   };
 
   if (isLoading) {
@@ -267,37 +284,42 @@ export const Events = () => {
                 <div className="space-y-6">
                   {upcomingEvents.map((event) => (
                     <div
-                      key={event.id}
+                      key={event.event_id}
                       className="flex items-start gap-4 border-b border-divider pb-6 last:border-0"
                     >
                       <div className="bg-content2 rounded-lg p-3 text-center min-w-[80px]">
                         <div className="text-sm text-foreground-500">
-                          {new Date(event.date).toLocaleDateString("en-US", {
-                            month: "short",
-                          })}
+                          {new Date(event.event_date).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                            }
+                          )}
                         </div>
                         <div className="text-2xl font-bold">
-                          {new Date(event.date).getDate()}
+                          {new Date(event.event_date).getDate()}
                         </div>
                         <div className="text-xs text-foreground-500">
-                          {new Date(event.date).getFullYear()}
+                          {new Date(event.event_date).getFullYear()}
                         </div>
                       </div>
                       <div className="flex-grow">
-                        <h4 className="text-lg font-medium">{event.title}</h4>
+                        <h4 className="text-lg font-medium">
+                          {event.event_name}
+                        </h4>
                         <div className="flex items-center gap-2 mt-2 text-sm text-foreground-600">
                           <Icon
                             icon="lucide:clock"
                             className="text-foreground-400"
                           />
-                          <span>{event.time}</span>
+                          <span>{event.event_time}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-sm text-foreground-600">
                           <Icon
                             icon="lucide:map-pin"
                             className="text-foreground-400"
                           />
-                          <span>{event.location}</span>
+                          <span>{event.event_location}</span>
                         </div>
                       </div>
                       <div className="flex gap-1">
@@ -315,7 +337,10 @@ export const Events = () => {
                           variant="flat"
                           isIconOnly
                           color="danger"
-                          onPress={() => handleDeleteEvent(event.id)}
+                          onPress={() => {
+                            setCurrentEventId(event.event_id);
+                            onDeleteEventModalOpen();
+                          }}
                           isDisabled={isLoading}
                         >
                           <Icon icon="lucide:trash-2" />
@@ -342,35 +367,41 @@ export const Events = () => {
                 <Input
                   label="Title"
                   placeholder="Enter event title"
-                  value={formData?.event_name}
-                  onChange={(value) => handleInputChange("event_name", value)}
+                  value={formData.event_name}
+                  onChange={(e) =>
+                    handleInputChange("event_name", e.target.value)
+                  }
                   isRequired
                 />
                 <Textarea
                   label="Description"
                   placeholder="Enter event description"
-                  value={formData?.event_description}
-                  onChange={(value) => handleInputChange("event_description", value)}
+                  value={formData.description}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
                   isRequired
                 />
                 <DateInput
                   label="Date"
                   placeholder="Enter event date"
-                  value={formData?.event_date}
+                  value={formData.event_date}
                   onChange={(value) => handleInputChange("event_date", value)}
                   isRequired
                 />
                 <TimeInput
                   label="Time"
-                  value={formData?.event_time}
+                  value={formData.event_time}
                   onChange={(value) => handleInputChange("event_time", value)}
                   isRequired
                 />
                 <Input
                   label="Location"
                   placeholder="Enter event location"
-                  value={formData?.event_location}
-                  onChange={(value) => handleInputChange("event_location", value)}
+                  value={formData.event_location}
+                  onChange={(e) =>
+                    handleInputChange("event_location", e.target.value)
+                  }
                   isRequired
                 />
               </ModalBody>
@@ -386,10 +417,41 @@ export const Events = () => {
                 </Button>
                 <Button
                   color="primary"
-                  // onPress={handlePostEvent}
-                  isLoading={isLoading}
+                  onPress={() => handleSubmit()}
+                  isLoading={isSubmitting}
                 >
                   {isEditing ? "Update Event" : "Post Event"}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={isDeleteEventModalOpen}
+        onOpenChange={onDeleteEventModalOpenChange}
+        size="lg"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Delete Event
+              </ModalHeader>
+              <ModalBody>
+                <p>Are you sure you want to delete this event?</p>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={handleDeleteEvent}
+                  isLoading={isLoading}
+                >
+                  Delete Event
                 </Button>
               </ModalFooter>
             </>

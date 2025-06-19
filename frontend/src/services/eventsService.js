@@ -11,25 +11,14 @@ const eventsService = {
    */
   getEvents: async (params = {}) => {
     try {
-      console.log('Fetching events with params:', params);
       const queryString = new URLSearchParams(params).toString();
-      console.log('Query string:', queryString);
-      
-      const response = await api.get(`${API_ENDPOINTS.EVENTS.BASE}?${queryString}`);
-      
-      console.log('Events API response:', response);
+
+      const response = await api.get(
+        `${API_ENDPOINTS.EVENTS.BASE}?${queryString}`
+      );
+
       return response.data;
     } catch (error) {
-      console.error('Error in getEvents:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          params: error.config?.params
-        }
-      });
       throw error.response?.data || error.message;
     }
   },

@@ -36,7 +36,7 @@ export const createEvent = async (req, res) => {
       req.body;
 
     // Authorization check
-    if (role !== "admin") {
+    if (role !== "School_Admin") {
       return handleError(res, 403, "Access denied. Admin privileges required");
     }
 
@@ -187,7 +187,7 @@ export const updateEvent = async (req, res) => {
       req.body;
 
     // Authorization check
-    if (role !== "admin") {
+    if (role !== "School_Admin") {
       return handleError(res, 403, "Access denied. Admin privileges required");
     }
 
@@ -251,13 +251,13 @@ export const deleteEvent = async (req, res) => {
     const { id } = req.params;
 
     // Authorization check
-    if (role !== "admin") {
+    if (role !== "School_Admin") {
       return handleError(res, 403, "Access denied. Admin privileges required");
     }
 
     // Check if event exists
     const existingEvent = await db.query(
-      "SELECT * FROM events WHERE id = ? AND school_id = ?",
+      "SELECT * FROM events WHERE event_id = ? AND school_id = ?",
       [id, school_id]
     );
     if (existingEvent.length === 0) {
@@ -265,7 +265,7 @@ export const deleteEvent = async (req, res) => {
     }
 
     // Delete event
-    await db.query("DELETE FROM events WHERE id = ? AND school_id = ?", [
+    await db.query("DELETE FROM events WHERE event_id = ? AND school_id = ?", [
       id,
       school_id,
     ]);

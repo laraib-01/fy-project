@@ -14,11 +14,10 @@ import axios from "axios";
 import { addToast, ToastProvider } from "@heroui/toast";
 import { Footer } from "../../components/Footer";
 import { Navbar } from "../../components/Navbar";
-import { useAuth } from "../../contexts/AuthContext";
+import authService from "../../services/authService";
 
 export const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,16 +31,16 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-      const res = await login(email, password, rememberMe);
+      const res = await authService.login(email, password);
 
       if (res?.status === "success") {
-        localStorage.setItem("educonnect_token", res.data.token);
-        localStorage.setItem("educonnect_role", res?.data?.user?.role);
         addToast({
           title: res?.message,
           color: "success",
         });
         setTimeout(() => {
+          localStorage.setItem("educonnect_token", res?.data?.token);
+          localStorage.setItem("educonnect_role", res?.data?.user?.role);
           if (res?.data?.user?.role === "Parent") {
             navigate("/parent");
           } else if (res?.data?.user?.role === "Teacher") {
@@ -51,15 +50,15 @@ export const Login = () => {
           } else if (res?.data?.user?.role === "EduConnect_Admin") {
             navigate("/admin");
           }
-        }, 1500);
+          setIsLoading(false);
+        }, 1000);
       }
     } catch (error) {
+      setIsLoading(false);
       addToast({
         title: error?.message,
         color: "danger",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

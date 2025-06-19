@@ -33,9 +33,18 @@ export const API_ENDPOINTS = {
     BY_ID: (id) => `${API_BASE_URL}/events/${id}`,
   },
 
+  // Teachers
+  TEACHERS: {
+    BASE: `${API_BASE_URL}/teachers`,
+    BY_ID: (id) => `${API_BASE_URL}/teachers/${id}`,
+    CLASSES: (id) => `${API_BASE_URL}/teachers/${id}/classes`,
+  },
+
   // Classes
   CLASSES: {
     BASE: `${API_BASE_URL}/classes`,
+    BY_ID: (id) => `${API_BASE_URL}/classes/${id}`,
+    ALL: `${API_BASE_URL}/classes/all`,
   },
 
   // Schools

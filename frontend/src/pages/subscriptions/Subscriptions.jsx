@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { subscriptionService } from "../../services/subscriptionService";
-import { useAuth } from "../../contexts/AuthContext";
 import {
   Card,
   CardBody,
@@ -41,8 +40,7 @@ export const Subscriptions = () => {
     is_active: true,
   });
   const [featureInput, setFeatureInput] = useState("");
-  const { user } = useAuth();
-  const isAdmin = user?.role === "EduConnect_Admin";
+  const isAdmin = localStorage.getItem("educonnect_role") === "EduConnect_Admin";
 
   // Form mode: 'create' or 'edit'
   const [formMode, setFormMode] = useState("create");

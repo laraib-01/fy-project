@@ -29,8 +29,25 @@ CREATE TABLE IF NOT EXISTS Users (
 );
 
 
--- 3. CLASSES: Represents a class/section under a teacher
+-- 3. TEACHERS: Stores teacher-specific information
+CREATE TABLE IF NOT EXISTS Teachers (
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  name VARCHAR(100) NOT NULL,
+  teacher_id INT PRIMARY KEY,                             -- References user_id from Users table
+  class_id INT NOT NULL,
+  qualification VARCHAR(100),                             -- Teacher's qualification
+  specialization VARCHAR(100),                           -- Subject/Area of specialization
+  joining_date DATE NOT NULL,                            -- Date when teacher joined the school
+  status ENUM('Active', 'On Leave', 'Inactive') NOT NULL DEFAULT 'Active',
+  FOREIGN KEY (teacher_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (class_id) REFERENCES Classes(class_id) ON DELETE CASCADE
+);
+
+-- 4. CLASSES: Represents a class/section under a teacher
 CREATE TABLE IF NOT EXISTS Classes (
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   class_id INT AUTO_INCREMENT PRIMARY KEY,            -- Unique class ID
   school_id INT NOT NULL,                             -- School this class belongs to
   teacher_id INT,                                     -- Teacher responsible for this class
@@ -41,6 +58,8 @@ CREATE TABLE IF NOT EXISTS Classes (
 
 -- 4. STUDENTS: Students enrolled in a class
 CREATE TABLE IF NOT EXISTS Students (
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   student_id INT AUTO_INCREMENT PRIMARY KEY,          -- Unique ID for each student
   class_id INT NOT NULL,                              -- Class the student is assigned to
   name VARCHAR(100) NOT NULL,                         -- Student's full name
@@ -120,6 +139,7 @@ CREATE TABLE IF NOT EXISTS Events (
   event_date DATE,                                    -- Date it occurs
   event_time TIME,                                    -- Time it occurs
   event_location VARCHAR(255),                        -- Where it occurs
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   description TEXT,                                   -- What it's about
   FOREIGN KEY (school_id) REFERENCES Schools(school_id)
 );
@@ -352,65 +372,6 @@ VALUES
 CREATE VIEW View_Active_Subscription_Plans AS
 SELECT * FROM Subscription_Plans WHERE is_active = TRUE;
 
--- Stored procedure for managing subscription plans (only accessible by EduConnect_Admin)
-DELIMITER //
-
-CREATE PROCEDURE Manage_Subscription_Plan(
-    IN p_admin_id INT,
-    IN p_plan_id INT,
-    IN p_plan_name VARCHAR(50),
-    IN p_monthly_price DECIMAL(10,2),
-    IN p_yearly_price DECIMAL(10,2),
-    IN p_max_teachers INT,
-    IN p_max_parents INT,
-    IN p_features TEXT,
-    IN p_is_active BOOLEAN,
-    IN p_action VARCHAR(10) -- 'INSERT', 'UPDATE', 'DELETE'
-)
-BEGIN
-    DECLARE is_admin BOOLEAN;
-    
-    -- Check if user is EduConnect_Admin
-    SELECT COUNT(*) > 0 INTO is_admin
-    FROM Users 
-    WHERE user_id = p_admin_id AND role = 'EduConnect_Admin';
-    
-    IF is_admin THEN
-        IF p_action = 'INSERT' THEN
-            INSERT INTO Subscription_Plans 
-            (plan_name, monthly_price, yearly_price, max_teachers, max_parents, features, is_active)
-            VALUES 
-            (p_plan_name, p_monthly_price, p_yearly_price, 
-             NULLIF(p_max_teachers, 0), NULLIF(p_max_parents, 0), 
-             p_features, p_is_active);
-             
-        ELSEIF p_action = 'UPDATE' THEN
-            UPDATE Subscription_Plans
-            SET plan_name = p_plan_name,
-                monthly_price = p_monthly_price,
-                yearly_price = p_yearly_price,
-                max_teachers = NULLIF(p_max_teachers, 0),
-                max_parents = NULLIF(p_max_parents, 0),
-                features = p_features,
-                is_active = p_is_active,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE plan_id = p_plan_id;
-            
-        ELSEIF p_action = 'DELETE' THEN
-            -- Soft delete by marking as inactive
-            UPDATE Subscription_Plans
-            SET is_active = FALSE,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE plan_id = p_plan_id;
-        END IF;
-    ELSE
-        SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Only EduConnect_Admin can manage subscription plans';
-    END IF;
-END //
-
-DELIMITER ;
-
 -- ======================================================
 -- TRANSACTIONS TABLE
 -- Purpose: Track all payment transactions in the system
@@ -448,79 +409,3 @@ CREATE INDEX idx_transactions_created_at ON Transactions(created_at);
 -- View for active transactions (completed payments)
 CREATE VIEW View_Active_Transactions AS
 SELECT * FROM Transactions WHERE status = 'completed';
-
--- Stored procedure for creating a new transaction (only accessible by EduConnect_Admin)
-DELIMITER //
-
-CREATE PROCEDURE Create_Transaction(
-    IN p_admin_id INT,
-    IN p_school_id INT,
-    IN p_subscription_plan_id INT,
-    IN p_amount DECIMAL(10, 2),
-    IN p_currency VARCHAR(3),
-    IN p_payment_method VARCHAR(50),
-    IN p_payment_gateway VARCHAR(50),
-    IN p_gateway_transaction_id VARCHAR(100),
-    IN p_status VARCHAR(20),
-    IN p_description TEXT,
-    IN p_billing_cycle VARCHAR(10),
-    IN p_metadata JSON
-)
-BEGIN
-    DECLARE is_admin BOOLEAN;
-    DECLARE new_transaction_id VARCHAR(50);
-    
-    -- Check if user is EduConnect_Admin
-    SELECT COUNT(*) > 0 INTO is_admin
-    FROM Users 
-    WHERE user_id = p_admin_id AND role = 'EduConnect_Admin';
-    
-    IF is_admin THEN
-        -- Generate a unique transaction ID if not provided
-        IF p_gateway_transaction_id IS NULL THEN
-            SET new_transaction_id = CONCAT('TXN', DATE_FORMAT(NOW(), '%Y%m%d'), '-', 
-                                          LPAD(FLOOR(RAND() * 10000), 4, '0'));
-        ELSE
-            SET new_transaction_id = p_gateway_transaction_id;
-        END IF;
-        
-        -- Insert the new transaction
-        INSERT INTO Transactions (
-            transaction_id,
-            school_id,
-            subscription_plan_id,
-            amount,
-            currency,
-            payment_method,
-            payment_gateway,
-            gateway_transaction_id,
-            status,
-            description,
-            billing_cycle,
-            metadata,
-            created_by
-        ) VALUES (
-            new_transaction_id,
-            p_school_id,
-            p_subscription_plan_id,
-            p_amount,
-            p_currency,
-            p_payment_method,
-            p_payment_gateway,
-            p_gateway_transaction_id,
-            p_status,
-            p_description,
-            p_billing_cycle,
-            p_metadata,
-            p_admin_id
-        );
-        
-        -- Return the new transaction ID
-        SELECT new_transaction_id AS transaction_id;
-    ELSE
-        SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Only EduConnect_Admin can create transactions';
-    END IF;
-END //
-
-DELIMITER ;
