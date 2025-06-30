@@ -19,9 +19,11 @@ export const getAllTeachers = async (req, res) => {
       `
       SELECT 
         u.user_id, u.name, u.email, u.role,
-        t.class_id, t.qualification, t.specialization, t.joining_date, t.status
+        t.class_id, t.qualification, t.specialization, t.joining_date, t.status,
+        c.class_name
       FROM Users u
       JOIN Teachers t ON u.user_id = t.teacher_id
+      LEFT JOIN Classes c ON t.class_id = c.class_id
       WHERE u.school_id = ? AND u.role = 'Teacher'
       ORDER BY u.name
     `,
@@ -50,9 +52,11 @@ export const getTeacherById = async (req, res) => {
       `
       SELECT 
         u.user_id, u.name, u.email, u.role,
-        t.class_id, t.qualification, t.specialization, t.joining_date, t.status
+        t.class_id, t.qualification, t.specialization, t.joining_date, t.status,
+        c.class_name
       FROM Users u
       JOIN Teachers t ON u.user_id = t.teacher_id
+      LEFT JOIN Classes c ON t.class_id = c.class_id
       WHERE u.user_id = ? AND u.school_id = ? AND u.role = 'Teacher'
     `,
       [id, school_id]
@@ -100,8 +104,16 @@ export const createTeacher = async (req, res) => {
 
     // 2. Create teacher record
     await db.query(
-      "INSERT INTO Teachers (teacher_id, class_id, qualification, specialization, joining_date, status) VALUES (?, ?, ?, ?, ?, ?)",
-      [userResult.insertId, class_id, qualification, specialization, joining_date, status]
+      "INSERT INTO Teachers (name, teacher_id, class_id, qualification, specialization, joining_date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        name,
+        userResult.insertId,
+        class_id,
+        qualification,
+        specialization,
+        joining_date,
+        status,
+      ]
     );
 
     return res.status(201).json({
@@ -127,8 +139,15 @@ export const updateTeacher = async (req, res) => {
   try {
     const { school_id } = req.user;
     const { id } = req.params;
-    const { name, email, qualification, specialization, joining_date, status } =
-      req.body;
+    const {
+      name,
+      email,
+      qualification,
+      specialization,
+      joining_date,
+      class_id,
+      status,
+    } = req.body;
 
     // 1. Verify the teacher exists and belongs to the same school
     const [teacher] = await db.query(
@@ -150,7 +169,7 @@ export const updateTeacher = async (req, res) => {
     }
 
     // 3. Update teacher information
-    if (qualification || specialization || joining_date || status) {
+    if (qualification || specialization || joining_date || class_id || status) {
       await db.query(
         `UPDATE Teachers 
          SET 
@@ -228,42 +247,85 @@ export const deleteTeacher = async (req, res) => {
   }
 };
 
-// Get all classes taught by a teacher
-export const getTeacherClasses = async (req, res) => {
+// Assign a single class to a teacher
+export const assignClass = async (req, res) => {
   try {
     const { school_id } = req.user;
-    const { id } = req.params;
+    const { id: teacher_id } = req.params;
+    const { class_id } = req.body;
 
-    // Verify the teacher exists and belongs to the same school
+    // 1. Verify the user is a School Admin
+    if (req.user.role !== "School_Admin") {
+      return handleError(
+        res,
+        403,
+        "Unauthorized: Only School Admins can assign classes"
+      );
+    }
+
+    // 2. Verify the teacher exists and belongs to the same school
     const [teacher] = await db.query(
       'SELECT u.user_id FROM Users u WHERE u.user_id = ? AND u.school_id = ? AND u.role = "Teacher"',
-      [id, school_id]
+      [teacher_id, school_id]
     );
 
     if (!teacher) {
       return handleError(res, 404, "Teacher not found");
     }
 
-    // Get all classes taught by this teacher
-    const classes = await db.query(
-      `SELECT 
-         c.class_id, c.class_name, 
-         COUNT(s.student_id) as student_count
-       FROM Classes c
-       LEFT JOIN Students s ON c.class_id = s.class_id
-       WHERE c.teacher_id = ? AND c.school_id = ?
-       GROUP BY c.class_id, c.class_name`,
-      [id, school_id]
+    // 3. Verify the class exists and belongs to the same school
+    const [classRecord] = await db.query(
+      "SELECT class_id, teacher_id FROM Classes WHERE class_id = ? AND school_id = ?",
+      [class_id, school_id]
     );
+
+    if (!classRecord) {
+      return handleError(res, 404, "Class not found");
+    }
+
+    // 4. Check if the class is already assigned to another teacher
+    if (classRecord.teacher_id && classRecord.teacher_id !== teacher_id) {
+      return handleError(
+        res,
+        400,
+        "Class is already assigned to another teacher"
+      );
+    }
+
+    // 5. Start a transaction to ensure atomic updates
+    await db.query("START TRANSACTION");
+    try {
+      // Update the Classes table to assign the teacher
+      await db.query("UPDATE Classes SET teacher_id = ? WHERE class_id = ?", [
+        teacher_id,
+        class_id,
+      ]);
+
+      // Update the Teachers table to reflect the assigned class
+      await db.query("UPDATE Teachers SET class_id = ? WHERE teacher_id = ?", [
+        class_id,
+        teacher_id,
+      ]);
+
+      await db.query("COMMIT");
+    } catch (error) {
+      await db.query("ROLLBACK");
+      throw error;
+    }
 
     return res.status(200).json({
       status: "success",
+      message: "Class assigned to teacher successfully",
       data: {
-        classes,
+        teacher_id,
+        class_id,
       },
     });
   } catch (error) {
-    console.error("Error in getTeacherClasses:", error);
-    return handleError(res, 500, "Failed to fetch teacher classes");
+    console.error("Error in assignClass:", error);
+    if (error.code === "ER_NO_REFERENCED_ROW_2") {
+      return handleError(res, 400, "Invalid teacher_id or class_id");
+    }
+    return handleError(res, 500, "Failed to assign class to teacher");
   }
 };

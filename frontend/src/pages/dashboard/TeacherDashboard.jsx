@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Tabs,
   Tab,
@@ -27,10 +27,11 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
+import classService from "../../services/classService";
 
 export const TeacherDashboard = () => {
   const [selectedTab, setSelectedTab] = useState("overview");
-  const [selectedClass, setSelectedClass] = useState("class-1");
+  const [selectedClass, setSelectedClass] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const {
@@ -51,12 +52,30 @@ export const TeacherDashboard = () => {
 
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementContent, setAnnouncementContent] = useState("");
+  const [classes, setClasses] = useState([]);
 
-  const classes = [
-    { id: "class-1", name: "Class 5-A" },
-    { id: "class-2", name: "Class 6-B" },
-    { id: "class-3", name: "Class 7-C" },
-  ];
+  // Fetch all classes from the school using classService
+  const fetchClasses = async () => {
+    try {
+      const response = await classService.getTeacherClasses();
+      setClasses(response?.classes || []);
+      if (response?.classes?.length > 0) {
+        setSelectedClass(response?.classes[0].class_id);
+      }
+    } catch (error) {
+      console.error("Error fetching school classes:", error);
+      addToast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Unable to load school classes.",
+        color: "error",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
 
   const students = [
     {
@@ -264,16 +283,19 @@ export const TeacherDashboard = () => {
                   variant="bordered"
                   endContent={<Icon icon="lucide:chevron-down" />}
                 >
-                  {classes.find((c) => c.id === selectedClass)?.name ||
-                    "Select Class"}
+                  {classes?.find(
+                    (c) => c?.class_id.toString() === selectedClass.toString()
+                  )?.class_name || "Select Class"}
                 </Button>
               </DropdownTrigger>
               <DropdownMenu
                 aria-label="Class selection"
                 onAction={(key) => setSelectedClass(key)}
               >
-                {classes.map((cls) => (
-                  <DropdownItem key={cls.id}>{cls.name}</DropdownItem>
+                {classes?.map((cls) => (
+                  <DropdownItem key={cls.class_id}>
+                    {cls.class_name}
+                  </DropdownItem>
                 ))}
               </DropdownMenu>
             </Dropdown>

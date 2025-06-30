@@ -28,14 +28,13 @@ export const SchoolAdminLayout = ({ children }) => {
 
   const sidebarItems = [
     { name: "Dashboard", icon: "lucide:layout-dashboard", path: "/school" },
-    { name: "Teachers", icon: "lucide:users", path: "/school/teachers" },
     { name: "Classes", icon: "la:school", path: "/school/classes" },
+    { name: "Teachers", icon: "lucide:users", path: "/school/teachers" },
     { name: "Students", icon: "lucide:graduation-cap", path: "/school/students" },
     { name: "Events", icon: "lucide:calendar", path: "/school/events" },
-    { name: "Reports", icon: "lucide:bar-chart-2", path: "/school/reports" },
-    { name: "My Subscription", icon: "lucide:credit-card", path: "/school/subscription" },
-    { name: "Billing", icon: "lucide:receipt", path: "/school/billing" },
-    { name: "Settings", icon: "lucide:settings", path: "/school/settings" },
+    // { name: "My Subscription", icon: "lucide:credit-card", path: "/school/subscription" },
+    // { name: "Billing", icon: "lucide:receipt", path: "/school/billing" },
+    // { name: "Settings", icon: "lucide:settings", path: "/school/settings" },
   ];
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Tabs,
   Tab,
@@ -24,288 +24,465 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  ToastProvider,
+  Select,
+  SelectItem,
+  DateInput,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
+import classService from "../services/classService";
+import assignmentService from "../services/assignmentService";
 
 export const Assignments = () => {
-  const [selectedTab, setSelectedTab] = useState("overview");
-  const [selectedClass, setSelectedClass] = useState("class-1");
   const [searchQuery, setSearchQuery] = useState("");
+  const [classes, setClasses] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("all");
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentAssignmentId, setCurrentAssignmentId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    dueDate: null,
+    classId: "",
+    status: "draft",
+    points: 100,
+  });
 
   const {
-    isOpen: isAnnouncementModalOpen,
-    onOpen: onAnnouncementModalOpen,
-    onOpenChange: onAnnouncementModalOpenChange,
+    isOpen: isAssignmentModalOpen,
+    onOpen: onAssignmentModalOpen,
+    onOpenChange: onAssignmentModalOpenChange,
   } = useDisclosure();
+
   const {
-    isOpen: isAttendanceModalOpen,
-    onOpen: onAttendanceModalOpen,
-    onOpenChange: onAttendanceModalOpenChange,
-  } = useDisclosure();
-  const {
-    isOpen: isGradeModalOpen,
-    onOpen: onGradeModalOpen,
-    onOpenChange: onGradeModalOpenChange,
+    isOpen: isDeleteModalOpen,
+    onOpen: onDeleteModalOpen,
+    onOpenChange: onDeleteModalOpenChange,
   } = useDisclosure();
 
-  const [announcementTitle, setAnnouncementTitle] = useState("");
-  const [announcementContent, setAnnouncementContent] = useState("");
+  console.log("assignments", assignments)
 
-  const classes = [
-    { id: "class-1", name: "Class 5-A" },
-    { id: "class-2", name: "Class 6-B" },
-    { id: "class-3", name: "Class 7-C" },
-  ];
-
-  const students = [
-    {
-      id: 1,
-      name: "Ahmed Khan",
-      attendance: "present",
-      grade: "A",
-      parentName: "Farooq Khan",
-    },
-    {
-      id: 2,
-      name: "Fatima Ali",
-      attendance: "absent",
-      grade: "B+",
-      parentName: "Zainab Ali",
-    },
-    {
-      id: 3,
-      name: "Hassan Raza",
-      attendance: "present",
-      grade: "A-",
-      parentName: "Imran Raza",
-    },
-    {
-      id: 4,
-      name: "Ayesha Malik",
-      attendance: "late",
-      grade: "B",
-      parentName: "Saima Malik",
-    },
-    {
-      id: 5,
-      name: "Usman Ahmed",
-      attendance: "present",
-      grade: "C+",
-      parentName: "Tariq Ahmed",
-    },
-    {
-      id: 6,
-      name: "Zara Siddiqui",
-      attendance: "present",
-      grade: "A",
-      parentName: "Asif Siddiqui",
-    },
-    {
-      id: 7,
-      name: "Ibrahim Shah",
-      attendance: "absent",
-      grade: "B-",
-      parentName: "Khalid Shah",
-    },
-    {
-      id: 8,
-      name: "Maryam Nawaz",
-      attendance: "present",
-      grade: "A+",
-      parentName: "Yasir Nawaz",
-    },
-  ];
-
-  const announcements = [
-    {
-      id: 1,
-      title: "Parent-Teacher Meeting",
-      content:
-        "The parent-teacher meeting will be held on Friday, November 15th from 3:00 PM to 5:00 PM.",
-      date: "2024-11-10",
-      class: "All Classes",
-    },
-    {
-      id: 2,
-      title: "Math Quiz Postponed",
-      content:
-        "The math quiz scheduled for tomorrow has been postponed to next Monday due to the school event.",
-      date: "2024-11-08",
-      class: "Class 5-A",
-    },
-    {
-      id: 3,
-      title: "Science Project Deadline",
-      content:
-        "Reminder: Science project reports are due this Thursday. Please ensure all students submit their work on time.",
-      date: "2024-11-05",
-      class: "Class 6-B",
-    },
-  ];
-
-  const assignments = [
-    {
-      id: 1,
-      title: "English Essay",
-      description: "Write a 500-word essay on 'My Favorite Book'",
-      dueDate: "2024-11-20",
-      class: "Class 5-A",
-      status: "active",
-    },
-    {
-      id: 2,
-      title: "Math Problem Set",
-      description: "Complete problems 1-15 from Chapter 7",
-      dueDate: "2024-11-18",
-      class: "Class 5-A",
-      status: "active",
-    },
-    {
-      id: 3,
-      title: "Science Lab Report",
-      description: "Submit the lab report for the plant growth experiment",
-      dueDate: "2024-11-15",
-      class: "Class 6-B",
-      status: "active",
-    },
-    {
-      id: 4,
-      title: "History Timeline",
-      description: "Create a timeline of major events from 1900-1950",
-      dueDate: "2024-11-10",
-      class: "Class 7-C",
-      status: "completed",
-    },
-  ];
-
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: "Annual Sports Day",
-      date: "2024-11-25",
-      time: "9:00 AM - 3:00 PM",
-      location: "School Grounds",
-    },
-    {
-      id: 2,
-      title: "Science Fair",
-      date: "2024-12-05",
-      time: "10:00 AM - 1:00 PM",
-      location: "School Hall",
-    },
-    {
-      id: 3,
-      title: "Winter Break Begins",
-      date: "2024-12-20",
-      time: "After School",
-      location: "N/A",
-    },
-  ];
-
-  const filteredStudents = students.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.parentName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handlePostAnnouncement = () => {
-    if (announcementTitle && announcementContent) {
-      // In a real app, this would be an API call
+  // Fetch all classes from the school using classService
+  const fetchClasses = async () => {
+    try {
+      const response = await classService.getTeacherClasses();
+      setClasses(response?.classes || []);
+    } catch (error) {
+      console.error("Error fetching school classes:", error);
       addToast({
-        title: "Announcement Posted",
-        description: "Your announcement has been successfully posted.",
-        color: "success",
+        title: "Error",
+        description:
+          error.response?.data?.message || "Unable to load school classes.",
+        color: "error",
       });
-
-      setAnnouncementTitle("");
-      setAnnouncementContent("");
-      onAnnouncementModalOpenChange(false);
     }
   };
 
-  const handleMarkAttendance = () => {
-    // In a real app, this would be an API call
-    addToast({
-      title: "Attendance Recorded",
-      description: "Attendance has been successfully recorded for the class.",
-      color: "success",
-    });
-
-    onAttendanceModalOpenChange(false);
+  const fetchAssignments = async () => {
+    try {
+      const response = await assignmentService.getAllAssignments(statusFilter, selectedClass);
+      console.log(response);
+      setAssignments(response?.assignments || []);
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
+      addToast({
+        title: "Error",
+        description: "Failed to load assignments. Please try again.",
+        color: "error",
+      });
+    }
   };
 
-  const handleUpdateGrades = () => {
-    // In a real app, this would be an API call
-    addToast({
-      title: "Grades Updated",
-      description: "Student grades have been successfully updated.",
-      color: "success",
-    });
+  useEffect(() => {
+    fetchAssignments();
+  }, [statusFilter]);
 
-    onGradeModalOpenChange(false);
+  // Fetch assignments on component mount
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  const handleInputChange = (key, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      dueDate: "",
+      classId: "",
+      status: "draft",
+      points: 100,
+    });
+    setIsEditing(false);
+    setCurrentAssignmentId(null);
+  };
+
+  function formatDate(date) {
+    return `${date.year}-${String(date.month).padStart(2, "0")}-${String(
+      date.day
+    ).padStart(2, "0")}`;
+  }
+
+  const handleSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    // Prepare student payload
+    const payload = {
+      title: formData.title,
+      description: formData.description,
+      due_date: formatDate(formData.dueDate),
+      class_id: formData.classId,
+      status: formData.status,
+      points: formData.points,
+    };
+
+    console.log("payload", payload);
+
+    try {
+      setIsSubmitting(true);
+
+      if (isEditing && currentAssignmentId) {
+        await assignmentService.updateAssignment(currentAssignmentId, payload);
+        addToast({
+          description: "Assignment updated successfully",
+          color: "success",
+        });
+      } else {
+        await assignmentService.createAssignment(payload);
+        addToast({
+          description: "Assignment created successfully",
+          color: "success",
+        });
+      }
+
+      resetForm();
+      fetchAssignments();
+      onAssignmentModalOpenChange(false);
+    } catch (error) {
+      console.error("Error saving teacher:", error.message);
+      addToast({
+        description: error.data?.message || "Failed to save event",
+        color: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAssignment = async () => {
+    try {
+      await assignmentService.deleteAssignment(currentAssignmentId);
+      addToast({
+        title: "Success",
+        description: "Assignment deleted successfully!",
+        color: "success",
+      });
+      fetchAssignments();
+      onDeleteModalOpenChange();
+    } catch (error) {
+      console.error("Error deleting assignment:", error);
+      addToast({
+        title: "Error",
+        description: "Failed to delete assignment. Please try again.",
+        color: "error",
+      });
+    }
   };
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Assignments</h1>
-          <p className="text-foreground-600">Manage your assignments</p>
-        </div>
+    <>
+      <ToastProvider placement="bottom-center" toastOffset={0} />
+      <div className="p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Assignments</h1>
+            <p className="text-foreground-600">Manage your assignments</p>
+          </div>
 
-        <Button color="primary" startContent={<Icon icon="lucide:plus" />}>
-          Create Assignment
-        </Button>
-      </div>
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {assignments.map((assignment) => (
-            <Card key={assignment.id}>
-              <CardBody>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="text-lg font-medium">{assignment.title}</h4>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-foreground-500">
-                      <span>
-                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                      </span>
-                      <span>•</span>
-                      <Chip size="sm" variant="flat">
-                        {assignment.class}
-                      </Chip>
-                    </div>
-                  </div>
-                  <Chip
-                    color={
-                      assignment.status === "active" ? "primary" : "success"
-                    }
-                    size="sm"
-                  >
-                    {assignment.status === "active" ? "Active" : "Completed"}
-                  </Chip>
-                </div>
-                <p className="mt-3 text-foreground-700">
-                  {assignment.description}
-                </p>
-                <div className="flex justify-between items-center mt-4">
-                  <div className="text-sm text-foreground-500">
-                    <span>Submissions: 12/24</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="flat">
-                      View Submissions
-                    </Button>
-                    <Button size="sm" variant="flat" isIconOnly>
-                      <Icon icon="lucide:more-vertical" />
-                    </Button>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
+          <Input
+            placeholder="Search assignments..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-md bg-white"
+            startContent={<Icon icon="lucide:search" />}
+          />
+          <Button
+            color="primary"
+            startContent={<Icon icon="lucide:plus" />}
+            onPress={onAssignmentModalOpen}
+          >
+            Create Assignment
+          </Button>
         </div>
+        <Card>
+          <CardBody>
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <Select
+                label="Class"
+                selectedKeys={[selectedClass]}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="min-w-[150px]"
+              >
+                <SelectItem key="all" value="all">
+                  All Classes
+                </SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem key={cls.class_id} value={cls.class_id}>
+                    {cls.class_name}
+                  </SelectItem>
+                ))}
+              </Select>
+
+              <Select
+                label="Status"
+                selectedKeys={[statusFilter]}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="min-w-[150px]"
+              >
+                <SelectItem key="all" value="all">
+                  All Statuses
+                </SelectItem>
+                <SelectItem key="active" value="active">
+                  Active
+                </SelectItem>
+                <SelectItem key="draft" value="draft">
+                  Draft
+                </SelectItem>
+                <SelectItem key="completed" value="completed">
+                  Completed
+                </SelectItem>
+              </Select>
+            </div>
+
+            <Table removeWrapper aria-label="Students table">
+              <TableHeader>
+                <TableColumn>Title</TableColumn>
+                <TableColumn>Description</TableColumn>
+                <TableColumn>Due Date</TableColumn>
+                <TableColumn>Class</TableColumn>
+                <TableColumn>Status</TableColumn>
+                <TableColumn>Actions</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {assignments?.map((assignment) => (
+                  <TableRow key={assignment.id}>
+                    <TableCell>{assignment.title}</TableCell>
+                    <TableCell>{assignment.description}</TableCell>
+                    <TableCell>
+                      {new Intl.DateTimeFormat("en-US", {
+                        dateStyle: "medium",
+                      }).format(new Date(assignment.due_date))}
+                    </TableCell>
+                    <TableCell>{assignment.class_name || "N/A"}</TableCell>
+                    <TableCell>
+                      <Chip
+                        color={
+                          assignment.status === "Active" ? "primary" : "success"
+                        }
+                        size="sm"
+                      >
+                        {assignment.status === "Active"
+                          ? "Active"
+                          : "Completed"}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button size="sm" variant="flat" isIconOnly>
+                            <Icon icon="lucide:more-vertical" />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu>
+                          <DropdownItem>View</DropdownItem>
+                          <DropdownItem>Edit</DropdownItem>
+                          <DropdownItem
+                            color="danger"
+                            onPress={() => {
+                              setCurrentAssignmentId(assignment.assignment_id);
+                              onDeleteModalOpen();
+                            }}
+                          >
+                            Delete
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
       </div>
-    </div>
+
+      {/* Create/Edit Assignment Modal */}
+      <Modal
+        isOpen={isAssignmentModalOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) resetForm();
+          onAssignmentModalOpenChange();
+        }}
+        size="2xl"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                {isEditing ? "Edit Assignment" : "Create New Assignment"}
+              </ModalHeader>
+              <ModalBody className="space-y-4">
+                <Input
+                  isRequired
+                  label="Title"
+                  name="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  placeholder="Enter assignment title"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    isRequired
+                    label="Class"
+                    name="classId"
+                    selectedKeys={[formData.classId]}
+                    onChange={(e) =>
+                      handleInputChange("classId", e.target.value)
+                    }
+                  >
+                    {classes.map((cls) => (
+                      <SelectItem key={cls.class_id} value={cls.class_id}>
+                        {cls.class_name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  <DateInput
+                    isRequired
+                    label="Due Date"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    onChange={(value) => handleInputChange("dueDate", value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Points"
+                    name="points"
+                    type="number"
+                    min="0"
+                    value={formData.points}
+                    onChange={(e) =>
+                      handleInputChange("points", e.target.value)
+                    }
+                    placeholder="Points"
+                  />
+
+                  <Select
+                    label="Status"
+                    name="status"
+                    selectedKeys={[formData.status]}
+                    onChange={(e) =>
+                      handleInputChange("status", e.target.value)
+                    }
+                  >
+                    {[
+                      { label: "Draft", value: "draft" },
+                      { label: "Active", value: "active" },
+                      { label: "Completed", value: "completed" },
+                    ].map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+
+                <Textarea
+                  isRequired
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
+                  placeholder="Enter assignment description and instructions"
+                  className="min-h-[150px]"
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="flat"
+                  onPress={() => {
+                    resetForm();
+                    onClose();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  type="submit"
+                  onPress={handleSubmit}
+                  isLoading={isSubmitting}
+                  isDisabled={isSubmitting}
+                >
+                  {isEditing ? "Update" : "Create"} Assignment
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isDeleteModalOpen} onOpenChange={onDeleteModalOpenChange}>
+        <ModalContent>
+          <ModalHeader>Delete Assignment</ModalHeader>
+          <ModalBody>
+            <p>
+              Are you sure you want to delete the assignment "
+              {
+                assignments?.find(
+                  (assignment) => assignment.assignment_id === currentAssignmentId
+                )?.title
+              }
+              "? This action cannot be undone.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="flat"
+              onPress={onDeleteModalOpenChange}
+              isDisabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={handleDeleteAssignment}
+              isLoading={isSubmitting}
+              isDisabled={isSubmitting}
+            >
+              Delete Assignment
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 };

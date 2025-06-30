@@ -24,10 +24,7 @@ const teacherService = {
   // Create a new teacher (school admin only)
   createTeacher: async (teacherData) => {
     try {
-      const response = await api.post(
-        API_ENDPOINTS.TEACHERS.BASE,
-        teacherData
-      );
+      const response = await api.post(API_ENDPOINTS.TEACHERS.BASE, teacherData);
       return response.data;
     } catch (err) {
       throw err;
@@ -62,9 +59,7 @@ const teacherService = {
   // Get classes taught by a teacher
   getTeacherClasses: async (teacherId) => {
     try {
-      const response = await api.get(
-        API_ENDPOINTS.TEACHERS.CLASSES(teacherId)
-      );
+      const response = await api.get(API_ENDPOINTS.TEACHERS.CLASSES(teacherId));
       return response.data;
     } catch (err) {
       throw err;
@@ -104,6 +99,18 @@ const teacherService = {
       const response = await api.upload(
         `${API_ENDPOINTS.TEACHERS.BASE}/${teacherId}/profile-picture`,
         formData
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  assignClasses: async (teacherId, classId) => {
+    try {
+      const response = await api.post(
+        API_ENDPOINTS.TEACHERS.BY_ID(teacherId),
+        { class_id: classId }
       );
       return response.data;
     } catch (err) {

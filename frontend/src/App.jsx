@@ -3,11 +3,10 @@ import { LandingPage } from "./pages/LandingPage";
 import { Login } from "./pages/auth/Login";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { PrivateRoute } from "./components/PrivateRoute";
-import { Students } from "./pages/Students";
 import { Assignments } from "./pages/Assignments";
-import { Events } from "./pages/Events";
+import { Events } from "./pages/events/Events";
 import { Announcements } from "./pages/Announcements";
-import { Schools } from "./pages/Schools";
+import { Schools } from "./pages/schools/Schools";
 import { AnalyticsAndReport } from "./pages/reports/Reports";
 import { AdminProfile } from "./pages/AdminProfile";
 import { AdminSettings } from "./pages/AdminSettings";
@@ -24,6 +23,8 @@ import { SchoolAdminDashboard } from "./pages/dashboard/SchoolAdminDashboard";
 import { AdminDashboard } from "./pages/dashboard/AdminDashboard";
 import { Classes } from "./pages/classes/Classes";
 import { Teachers } from "./pages/teachers/Teachers";
+import { AdminStudentsList } from "./pages/students/AdminStudentsList";
+import { TeacherStudentsList } from "./pages/students/TeacherStudentsList";
 
 const AppWrapper = () => {
   return (
@@ -46,7 +47,7 @@ const AppWrapper = () => {
         element={
           <PrivateRoute allowedRoles={["Teacher"]}>
             <TeacherLayout>
-              <Students />
+              <TeacherStudentsList />
             </TeacherLayout>
           </PrivateRoute>
         }
@@ -137,7 +138,7 @@ const AppWrapper = () => {
         element={
           <PrivateRoute allowedRoles={["School_Admin"]}>
             <SchoolAdminLayout>
-              <Students />
+              <AdminStudentsList />
             </SchoolAdminLayout>
           </PrivateRoute>
         }

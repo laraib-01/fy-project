@@ -19,21 +19,22 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Checkbox,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
 import classService from "../../services/classService";
+import teacherService from "../../services/teacherService";
+import studentService from "../../services/studentService";
 
 export const Classes = () => {
   const [classes, setClasses] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [className, setClassName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-
-  console.log("className", className);
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentClassId, setCurrentClassId] = useState(null);
@@ -54,9 +55,6 @@ export const Classes = () => {
     try {
       setIsLoading(true);
       const response = await classService.getSchoolClasses();
-
-      console.log("responseresponseresponse", response);
-
       setClasses(response?.classes || []);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -76,6 +74,7 @@ export const Classes = () => {
   const resetForm = () => {
     setIsEditing(false);
     setCurrentClassId(null);
+    setClassName("");
   };
 
   const handleSubmit = async (e) => {
@@ -217,12 +216,17 @@ export const Classes = () => {
                     <TableCell>{cls?.student_count || "0"}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" color="primary" variant="flat">
-                          Assign Teacher
-                        </Button>
-                        <Button size="sm" color="primary" variant="flat">
+                        {/* <Button
+                          size="sm"
+                          color="primary"
+                          variant="flat"
+                          onPress={() => {
+                            setCurrentClassId(cls.class_id);
+                            onAssignStudentsModalOpen();
+                          }}
+                        >
                           Assign Students
-                        </Button>
+                        </Button> */}
                         <Button
                           size="sm"
                           color="primary"

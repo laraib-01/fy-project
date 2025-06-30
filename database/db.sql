@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS Schools (
 
 -- 2. USERS: All user accounts (Admins, Teachers, Parents)
 CREATE TABLE IF NOT EXISTS Users (
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   user_id INT AUTO_INCREMENT PRIMARY KEY,             -- Unique user ID
   school_id INT,                                      -- Links user to a school
   role ENUM('EduConnect_Admin', 'School_Admin', 'Teacher', 'Parent') NOT NULL,  -- User's role
@@ -62,9 +64,18 @@ CREATE TABLE IF NOT EXISTS Students (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   student_id INT AUTO_INCREMENT PRIMARY KEY,          -- Unique ID for each student
   class_id INT NOT NULL,                              -- Class the student is assigned to
-  name VARCHAR(100) NOT NULL,                         -- Student's full name
+  roll_number VARCHAR(50) NOT NULL,
+  first_name VARCHAR(50) NOT NULL,                    -- Student's first name
+  last_name VARCHAR(50) NOT NULL,                     -- Student's last name
   date_of_birth DATE,                                 -- Date of birth
-  FOREIGN KEY (class_id) REFERENCES Classes(class_id)
+  gender ENUM('Male', 'Female', 'Other'),             -- Gender, optional
+  address VARCHAR(255),                               -- Address, optional
+  phone_number VARCHAR(15),                           -- Phone number, optional
+  enrollment_date DATE,                               -- Enrollment date, optional
+  parent_id INT,                                      -- Direct link to primary parent
+  FOREIGN KEY (class_id) REFERENCES Classes(class_id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES Users(user_id) ON DELETE SET NULL,
+  INDEX idx_students_parent_id (parent_id)
 );
 
 -- 5. PARENT-STUDENT LINK: Which parent is linked to which student
@@ -87,9 +98,11 @@ CREATE TABLE IF NOT EXISTS Parent_Student_Links (
 
 -- 6. ATTENDANCE: Daily attendance marked by teachers
 CREATE TABLE IF NOT EXISTS Attendance (
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   student_id INT NOT NULL,                            -- Who was marked
   attendance_date DATE NOT NULL,                      -- When attendance was taken
-  status ENUM('Present', 'Absent') NOT NULL,          -- Attendance status
+  status ENUM('Present', 'Absent', 'Late') NOT NULL,          -- Attendance status
   teacher_id INT NOT NULL,                            -- Who marked the attendance
   PRIMARY KEY (student_id, attendance_date),          -- Prevent duplicate entries
   FOREIGN KEY (student_id) REFERENCES Students(student_id),
@@ -98,12 +111,16 @@ CREATE TABLE IF NOT EXISTS Attendance (
 
 -- 7. ASSIGNMENTS: Work given to a class by a teacher
 CREATE TABLE IF NOT EXISTS Assignments (
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   assignment_id INT AUTO_INCREMENT PRIMARY KEY,       -- Unique ID
   teacher_id INT NOT NULL,                            -- Who assigned it
   class_id INT NOT NULL,                              -- Which class it's for
   title VARCHAR(255) NOT NULL,                        -- Assignment title
   description TEXT,                                   -- Optional details
   due_date DATE,                                      -- Deadline
+  points INT NOT NULL,                                -- Points for the assignment
+  status ENUM('Draft', 'Active', 'Completed') NOT NULL DEFAULT 'Draft', -- Assignment status
   FOREIGN KEY (teacher_id) REFERENCES Users(user_id),
   FOREIGN KEY (class_id) REFERENCES Classes(class_id)
 );
@@ -114,7 +131,7 @@ CREATE TABLE IF NOT EXISTS Assignment_Submissions (
   assignment_id INT NOT NULL,                         -- The assignment
   student_id INT NOT NULL,                            -- The student
   submission_date DATE,                               -- When it was submitted
-  status ENUM('Submitted', 'Not Submitted') NOT NULL, -- Submission status
+  status ENUM('Submitted', 'Not Submitted') NOT NULL,
   FOREIGN KEY (assignment_id) REFERENCES Assignments(assignment_id),
   FOREIGN KEY (student_id) REFERENCES Students(student_id)
 );

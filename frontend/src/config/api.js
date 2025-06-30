@@ -17,6 +17,11 @@ export const API_ENDPOINTS = {
     ME: `${API_BASE_URL}/me`,
   },
 
+  // Dashboard
+  DASHBOARD: {
+    STATS: `${API_BASE_URL}/dashboard/stats`,
+  },
+
   // Users
   USERS: {
     PROFILE: `${API_BASE_URL}/users/me`,
@@ -37,7 +42,7 @@ export const API_ENDPOINTS = {
   TEACHERS: {
     BASE: `${API_BASE_URL}/teachers`,
     BY_ID: (id) => `${API_BASE_URL}/teachers/${id}`,
-    CLASSES: (id) => `${API_BASE_URL}/teachers/${id}/classes`,
+    CLASSES: `${API_BASE_URL}/teachers-classes`,
   },
 
   // Classes
@@ -65,13 +70,33 @@ export const API_ENDPOINTS = {
     BY_ID: (id) => `${API_BASE_URL}/transactions/${id}`,
     SCHOOL: (schoolId) => `${API_BASE_URL}/transactions/school/${schoolId}`,
     STATUS: (id) => `${API_BASE_URL}/transactions/${id}/status`,
-    SUMMARY: `${API_BASE_URL}/transactions/summary`
+    SUMMARY: `${API_BASE_URL}/transactions/summary`,
   },
 
   // Students
   STUDENTS: {
     BASE: `${API_BASE_URL}/students`,
-    DASHBOARD: (id) => `${API_BASE_URL}/students/${id}/dashboard`,
+    BY_ID: (id) => `${API_BASE_URL}/students/${id}`,
+    BY_CLASS: (classId) => `${API_BASE_URL}/students/class/${classId}`,
+    ATTENDANCE: (classId, date) =>
+      `${API_BASE_URL}/${classId}/attendance/${date}`,
+    SUBMIT_ATTENDANCE: (classId) => `${API_BASE_URL}/${classId}/attendance`,
+    ATTENDANCE_RANGE: (classId, startDate, endDate) =>
+      `${API_BASE_URL}/${classId}/attendance/range?startDate=${startDate}&endDate=${endDate}`,
+    ATTENDANCE_SUMMARY: (classId, startDate, endDate) =>
+      `${API_BASE_URL}/${classId}/attendance/summary?startDate=${startDate}&endDate=${endDate}`,
+  },
+
+  // Assignments
+  ASSIGNMENTS: {
+    BASE: `${API_BASE_URL}/assignments`,
+    BY_ID: (id) => `${API_BASE_URL}/assignments/${id}`,
+    SUBMIT_ASSIGNMENT: (assignmentId) =>
+      `${API_BASE_URL}/assignments/${assignmentId}/submissions`,
+    SUBMISSIONS: (assignmentId) =>
+      `${API_BASE_URL}/assignments/${assignmentId}/submissions`,
+    SUBMISSION_SUMMARY: (classId, startDate, endDate) =>
+      `${API_BASE_URL}/assignments/summary?classId=${classId}&startDate=${startDate}&endDate=${endDate}`,
   },
 };
 

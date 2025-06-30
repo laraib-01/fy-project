@@ -1,14 +1,6 @@
 import { api, API_ENDPOINTS } from "../config/api";
 
-/**
- * Service for handling event-related API calls
- */
 const eventsService = {
-  /**
-   * Get all events
-   * @param {Object} params - Query parameters (page, limit, status, from_date, to_date)
-   * @returns {Promise<Object>} - Object containing events and pagination info
-   */
   getEvents: async (params = {}) => {
     try {
       const queryString = new URLSearchParams(params).toString();
@@ -23,12 +15,6 @@ const eventsService = {
     }
   },
 
-  /**
-   * Get a single event by ID
-   * @param {string|number} id - Event ID
-   * @param {Object} options - Additional options (e.g., include registrations)
-   * @returns {Promise<Object>} - Event details
-   */
   getEventById: async (id, options = {}) => {
     try {
       const response = await api.get(
@@ -43,11 +29,6 @@ const eventsService = {
     }
   },
 
-  /**
-   * Create a new event (Admin only)
-   * @param {Object} eventData - Event data
-   * @returns {Promise<Object>} - Created event details
-   */
   createEvent: async (eventData) => {
     try {
       const response = await api.post(API_ENDPOINTS.EVENTS.BASE, {
@@ -64,12 +45,6 @@ const eventsService = {
     }
   },
 
-  /**
-   * Update an existing event (Admin only)
-   * @param {string|number} id - Event ID
-   * @param {Object} updates - Fields to update
-   * @returns {Promise<Object>} - Updated event details
-   */
   updateEvent: async (id, updates) => {
     try {
       const allowedFields = [
@@ -98,11 +73,6 @@ const eventsService = {
     }
   },
 
-  /**
-   * Delete an event (Admin only)
-   * @param {string|number} id - Event ID
-   * @returns {Promise<boolean>} - True if successful
-   */
   deleteEvent: async (id) => {
     try {
       await api.delete(`${API_ENDPOINTS.EVENTS.BASE}/${id}`);
@@ -113,11 +83,6 @@ const eventsService = {
     }
   },
 
-  /**
-   * Get upcoming events
-   * @param {number} limit - Maximum number of events to return
-   * @returns {Promise<Array>} - Array of upcoming events
-   */
   getUpcomingEvents: async (limit = 5) => {
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -135,11 +100,6 @@ const eventsService = {
     }
   },
 
-  /**
-   * Get event dashboard data
-   * @param {string|number} eventId - Event ID
-   * @returns {Promise<Object>} - Event dashboard data
-   */
   getEventDashboard: async (eventId) => {
     try {
       const response = await api.get(API_ENDPOINTS.EVENTS.DASHBOARD(eventId));

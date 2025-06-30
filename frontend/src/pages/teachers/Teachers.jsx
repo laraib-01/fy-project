@@ -115,10 +115,10 @@ export const Teachers = () => {
   });
   const [searchQuery, setSearchQuery] = useState("");
 
-  console.log("formData", formData);
-
   const [isEditing, setIsEditing] = useState(false);
   const [currentTeacherId, setCurrentTeacherId] = useState(null);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [selectedClass, setSelectedClass] = useState(null);
 
   const {
     isOpen: isTeacherModalOpen,
@@ -130,6 +130,12 @@ export const Teachers = () => {
     isOpen: isDeleteTeacherModalOpen,
     onOpen: onDeleteTeacherModalOpen,
     onOpenChange: onDeleteTeacherModalOpenChange,
+  } = useDisclosure();
+
+  const {
+    isOpen: isAssignClassesModalOpen,
+    onOpen: onAssignClassesModalOpen,
+    onOpenChange: onAssignClassesModalOpenChange,
   } = useDisclosure();
 
   const toggleVisibility = () => setIsVisible(!isVisible);
@@ -224,7 +230,7 @@ export const Teachers = () => {
     const payload = {
       name: formData.name,
       email: formData.email,
-      ...(isEditing ? { password: formData.password } : {}),
+      ...(!isEditing ? { password: formData.password } : {}),
       qualification: formData.qualification,
       specialization: formData.specialization,
       joining_date: formatDate(formData.joining_date),
@@ -256,6 +262,32 @@ export const Teachers = () => {
       console.error("Error saving teacher:", error);
       addToast({
         description: error.message || "Failed to save event",
+        color: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClassAssignment = async () => {
+    try {
+      setIsSubmitting(true);
+      await teacherService.assignClasses(
+        selectedTeacher.user_id,
+        selectedClass
+      );
+      addToast({
+        description: "Classes assigned successfully",
+        color: "success",
+      });
+      onAssignClassesModalOpenChange(false);
+      setSelectedTeacher(null);
+      setSelectedClass(null);
+      fetchTeachers();
+    } catch (error) {
+      console.error("Error assigning classes:", error);
+      addToast({
+        description: error.message || "Failed to assign classes",
         color: "error",
       });
     } finally {
@@ -361,24 +393,35 @@ export const Teachers = () => {
                 <TableColumn>NAME</TableColumn>
                 <TableColumn>QUALIFICATION</TableColumn>
                 <TableColumn>SPECIALIZATION</TableColumn>
+                <TableColumn>CLASS</TableColumn>
                 <TableColumn className="w-1/6">ACTIONS</TableColumn>
               </TableHeader>
               <TableBody emptyContent={"No teachers to display."}>
-                {filteredTeachers.map((cls) => (
-                  <TableRow key={cls.user_id}>
-                    <TableCell>{cls.name}</TableCell>
-                    <TableCell>{cls?.qualification || "N/A"}</TableCell>
-                    <TableCell>{cls?.specialization || "0"}</TableCell>
+                {filteredTeachers.map((tch) => (
+                  <TableRow key={tch.user_id}>
+                    <TableCell>{tch.name}</TableCell>
+                    <TableCell>{tch?.qualification || "N/A"}</TableCell>
+                    <TableCell>{tch?.specialization || "0"}</TableCell>
+                    <TableCell>{tch?.class_name || "N/A"}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Button size="sm" color="primary" variant="flat">
-                          Assign Classes
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="flat"
+                          onPress={() => {
+                            setSelectedTeacher(tch);
+                            setSelectedClass(tch.class_id.toString());
+                            onAssignClassesModalOpen();
+                          }}
+                        >
+                          Assign Class
                         </Button>
                         <Button
                           size="sm"
                           color="primary"
                           variant="flat"
-                          onPress={() => handleEditTeacher(cls)}
+                          onPress={() => handleEditTeacher(tch)}
                         >
                           Edit
                         </Button>
@@ -387,7 +430,7 @@ export const Teachers = () => {
                           color="danger"
                           variant="flat"
                           onPress={() => {
-                            setCurrentTeacherId(cls.user_id);
+                            setCurrentTeacherId(tch.user_id);
                             onDeleteTeacherModalOpen();
                           }}
                         >
@@ -555,6 +598,51 @@ export const Teachers = () => {
                   isLoading={isLoading}
                 >
                   Delete Teacher
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Assign Classes Modal */}
+      <Modal
+        isOpen={isAssignClassesModalOpen}
+        onOpenChange={onAssignClassesModalOpenChange}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Assign Classes to {selectedTeacher?.name}
+              </ModalHeader>
+              <ModalBody>
+              <Select
+                  label="Class"
+                  placeholder="Select class"
+                  defaultSelectedKeys={[selectedClass]}
+                  selectedKeys={[selectedClass]}
+                  onChange={(e) =>
+                    setSelectedClass(e.target.value)
+                  }
+                >
+                  {classes?.map((cls) => (
+                    <SelectItem key={cls?.class_id.toString()}>
+                      {cls?.class_name}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleClassAssignment}
+                  isLoading={isSubmitting}
+                >
+                  Assign Classes
                 </Button>
               </ModalFooter>
             </>

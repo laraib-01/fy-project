@@ -24,7 +24,7 @@ import {
   parseTime,
   parseZonedDateTime,
 } from "@internationalized/date";
-import eventsService from "../services/eventsService";
+import eventsService from "../../services/eventsService";
 
 export const Events = () => {
   const [events, setEvents] = useState([]);

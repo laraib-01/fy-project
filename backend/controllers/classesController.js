@@ -46,8 +46,6 @@ export const getTeacherClasses = async (req, res) => {
   try {
     const { id: teacher_id } = req.user;
 
-    console.log("req.user", req.user);
-
     // Fetch all classes for the teacher
     const classes = await db.query(
       "SELECT * FROM classes WHERE teacher_id = ?",
@@ -56,8 +54,9 @@ export const getTeacherClasses = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
+      user_id: teacher_id,
       data: {
-        classes,
+        classes: classes[0],
       },
     });
   } catch (error) {

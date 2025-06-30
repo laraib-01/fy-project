@@ -13,9 +13,9 @@ const classService = {
   },
 
   // Get all classes
-  getAllClasses: async () => {
+  getTeacherClasses: async () => {
     try {
-      const response = await api.get(API_ENDPOINTS.CLASSES.BASE);
+      const response = await api.get(API_ENDPOINTS.TEACHERS.CLASSES);
       return response.data;
     } catch (err) {
       throw err;
@@ -70,56 +70,6 @@ const classService = {
     try {
       const response = await api.get(
         `${API_ENDPOINTS.CLASSES.BASE}/${classId}/students`
-      );
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  // Add student to class
-  addStudentToClass: async (classId, studentId) => {
-    try {
-      const response = await api.post(
-        `${API_ENDPOINTS.CLASSES.BASE}/${classId}/students`,
-        { studentId }
-      );
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  // Remove student from class
-  removeStudentFromClass: async (classId, studentId) => {
-    try {
-      const response = await api.delete(
-        `${API_ENDPOINTS.CLASSES.BASE}/${classId}/students/${studentId}`
-      );
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  // Get class schedule
-  getClassSchedule: async (classId) => {
-    try {
-      const response = await api.get(
-        `${API_ENDPOINTS.CLASSES.BASE}/${classId}/schedule`
-      );
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
-  // Update class schedule
-  updateClassSchedule: async (classId, scheduleData) => {
-    try {
-      const response = await api.put(
-        `${API_ENDPOINTS.CLASSES.BASE}/${classId}/schedule`,
-        scheduleData
       );
       return response.data;
     } catch (err) {
