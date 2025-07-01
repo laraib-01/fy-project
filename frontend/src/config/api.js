@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
     REFRESH_TOKEN: `${API_BASE_URL}/refresh-token`,
     FORGOT_PASSWORD: `${API_BASE_URL}/forgot-password`,
     RESET_PASSWORD: `${API_BASE_URL}/reset-password`,
+    VALIDATE_TOKEN: `${API_BASE_URL}/validate-reset-token`,
     ME: `${API_BASE_URL}/me`,
   },
 
@@ -43,6 +44,7 @@ export const API_ENDPOINTS = {
     BASE: `${API_BASE_URL}/teachers`,
     BY_ID: (id) => `${API_BASE_URL}/teachers/${id}`,
     CLASSES: `${API_BASE_URL}/teachers-classes`,
+    
   },
 
   // Classes
@@ -62,6 +64,15 @@ export const API_ENDPOINTS = {
   SUBSCRIPTION_PLANS: {
     BASE: `${API_BASE_URL}/subscription-plans`,
     BY_ID: (id) => `${API_BASE_URL}/subscription-plans/${id}`,
+  },
+
+  // Subscriptions
+  SUBSCRIPTIONS: {
+    BASE: `${API_BASE_URL}/subscriptions`,
+    PLANS: `${API_BASE_URL}/subscriptions/plans`,
+    CURRENT: `${API_BASE_URL}/subscriptions/current`,
+    HISTORY: `${API_BASE_URL}/subscriptions/history`,
+    REQUIRED: `${API_BASE_URL}/subscriptions/required`,
   },
 
   // Transactions

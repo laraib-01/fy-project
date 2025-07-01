@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
+import db from "../config/db.js";
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.header("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -21,20 +22,37 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    if (decoded.role === "EduConnect_Admin") {
-      req.user = {
-        id: decoded.id,
-        role: decoded.role,
-      };
-      return next();
-    } else {
-      req.user = {
-        id: decoded.id,
-        role: decoded.role,
-        school_id: decoded.school_id,
-      };
-      return next();
+    // Base user object
+    const user = {
+      id: decoded.id,
+      role: decoded.role,
+    };
+
+    // Add school_id for non-admin users
+    if (decoded.role !== 'EduConnect_Admin') {
+      user.school_id = decoded.school_id;
     }
+
+    // Add subscription status for School_Admin
+    if (decoded.role === 'School_Admin' && decoded.school_id) {
+      try {
+        const [subscriptions] = await db.query(
+          `SELECT status, end_date FROM Subscriptions 
+           WHERE school_id = ? 
+           AND status = 'Active' 
+           AND end_date >= CURDATE() 
+           LIMIT 1`,
+          [decoded.school_id]
+        );
+        user.hasActiveSubscription = subscriptions.length > 0;
+      } catch (error) {
+        console.error('Error checking subscription status:', error);
+        user.hasActiveSubscription = false;
+      }
+    }
+
+    req.user = user;
+    return next();
   } catch (error) {
     res.status(401).json({ status: "error", message: "Invalid token" });
   }

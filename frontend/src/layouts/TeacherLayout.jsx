@@ -168,13 +168,13 @@ export const TeacherLayout = ({ children }) => {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="User Actions">
-                <DropdownItem
+                {/* <DropdownItem
                   key="profile"
                   startContent={<Icon icon="lucide:user" />}
                   onPress={() => navigate("/teacher/profile")}
                 >
                   My Profile
-                </DropdownItem>
+                </DropdownItem> */}
                 <DropdownItem
                   key="logout"
                   color="danger"

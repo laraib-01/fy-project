@@ -56,7 +56,15 @@ export const createAssignment = async (req, res) => {
     const [result] = await connection.query(
       `INSERT INTO Assignments (teacher_id, class_id, title, description, due_date, points, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [teacher_id, class_id, title, description, due_date, points, status || "Active"]
+      [
+        teacher_id,
+        class_id,
+        title,
+        description,
+        due_date,
+        points,
+        status || "Active",
+      ]
     );
 
     await connection.commit();
@@ -81,8 +89,9 @@ export const createAssignment = async (req, res) => {
 export const getAllAssignments = async (req, res) => {
   try {
     const { role, id: user_id, school_id } = req.user;
-    const { class_id, start_date, end_date } = req.query;
+    const { class_id, status } = req.query;
 
+    // Base SQL query
     let query = `
       SELECT a.assignment_id, a.class_id, a.teacher_id, a.title, a.description, a.due_date, a.points, a.status, a.created_at, a.updated_at,
              c.class_name
@@ -107,23 +116,47 @@ export const getAllAssignments = async (req, res) => {
     }
 
     // Add optional filters
-    if (class_id) {
+    if (class_id && class_id !== "all") {
       query += " AND a.class_id = ?";
       params.push(class_id);
     }
-    if (start_date && end_date) {
-      if (
-        !/^\d{4}-\d{2}-\d{2}$/.test(start_date) ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(end_date)
-      ) {
-        return handleError(res, 400, "Invalid date format. Use YYYY-MM-DD");
+
+    if (status && status !== "all") {
+      // Normalize status to match database (e.g., 'draft' -> 'Draft')
+      const normalizedStatus =
+        status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+      const validStatuses = ["Active", "Draft", "Completed"];
+      if (!validStatuses.includes(normalizedStatus)) {
+        return handleError(
+          res,
+          400,
+          "Invalid status. Use Active, Draft, or Completed"
+        );
       }
-      query += " AND a.due_date BETWEEN ? AND ?";
-      params.push(start_date, end_date);
+      query += " AND a.status = ?";
+      params.push(normalizedStatus);
     }
 
+    // Execute query
     const [assignments] = await db.query(query, params);
-    return res.status(200).json({ status: "success", assignments });
+
+    // Return response
+    return res.status(200).json({
+      status: "success",
+      assignments: assignments.map((assignment) => ({
+        assignmentId: assignment.assignment_id,
+        classId: assignment.class_id,
+        teacherId: assignment.teacher_id,
+        title: assignment.title,
+        description: assignment.description,
+        dueDate: assignment.due_date,
+        points: assignment.points,
+        status: assignment.status,
+        createdAt: assignment.created_at,
+        updatedAt: assignment.updated_at,
+        className: assignment.class_name,
+      })),
+    });
   } catch (error) {
     console.error("Error fetching assignments:", error);
     return handleError(res, 500, "Failed to fetch assignments");
@@ -229,7 +262,7 @@ export const deleteAssignment = async (req, res) => {
 
   try {
     const { role, id: teacher_id, school_id } = req.user;
-    const { assignment_id } = req.params;
+    const { assignmentId } = req.params;
 
     if (role !== "Teacher") {
       await connection.rollback();
@@ -241,7 +274,7 @@ export const deleteAssignment = async (req, res) => {
       `SELECT a.assignment_id FROM Assignments a
        JOIN Classes c ON a.class_id = c.class_id
        WHERE a.assignment_id = ? AND a.teacher_id = ? AND c.school_id = ?`,
-      [assignment_id, teacher_id, school_id]
+      [assignmentId, teacher_id, school_id]
     );
     if (!assignment.length) {
       await connection.rollback();
@@ -255,13 +288,13 @@ export const deleteAssignment = async (req, res) => {
     // Delete related submissions first
     await connection.query(
       "DELETE FROM Assignment_Submissions WHERE assignment_id = ?",
-      [assignment_id]
+      [assignmentId]
     );
 
     // Delete assignment
     const [result] = await connection.query(
       "DELETE FROM Assignments WHERE assignment_id = ?",
-      [assignment_id]
+      [assignmentId]
     );
 
     if (result.affectedRows === 0) {
@@ -273,7 +306,7 @@ export const deleteAssignment = async (req, res) => {
     return res.status(200).json({
       status: "success",
       message: "Assignment deleted successfully",
-      data: { assignmentId: assignment_id },
+      data: { assignmentId: assignmentId },
     });
   } catch (error) {
     await connection.rollback();

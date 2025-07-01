@@ -208,7 +208,7 @@ export const Classes = () => {
                 <TableColumn>STUDENTS</TableColumn>
                 <TableColumn className="w-1/6">ACTIONS</TableColumn>
               </TableHeader>
-              <TableBody>
+              <TableBody emptyContent="No classes found">
                 {filteredClasses.map((cls) => (
                   <TableRow key={cls.class_id}>
                     <TableCell>{cls.class_name}</TableCell>

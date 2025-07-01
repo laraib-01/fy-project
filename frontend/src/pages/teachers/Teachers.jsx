@@ -24,6 +24,11 @@ import {
   TableCell,
   Select,
   SelectItem,
+  Chip,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
@@ -129,13 +134,19 @@ export const Teachers = () => {
   const {
     isOpen: isDeleteTeacherModalOpen,
     onOpen: onDeleteTeacherModalOpen,
-    onOpenChange: onDeleteTeacherModalOpenChange,
+    onClose: onDeleteTeacherModalClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isDeactivateTeacherModalOpen,
+    onOpen: onDeactivateTeacherModalOpen,
+    onClose: onDeactivateTeacherModalClose,
   } = useDisclosure();
 
   const {
     isOpen: isAssignClassesModalOpen,
     onOpen: onAssignClassesModalOpen,
-    onOpenChange: onAssignClassesModalOpenChange,
+    onClose: onAssignClassesModalClose,
   } = useDisclosure();
 
   const toggleVisibility = () => setIsVisible(!isVisible);
@@ -159,7 +170,6 @@ export const Teachers = () => {
 
   const fetchTeachers = async () => {
     try {
-      setIsLoading(true);
       const response = await teacherService.getAllTeachers();
 
       setTeachers(response?.teachers || []);
@@ -280,7 +290,7 @@ export const Teachers = () => {
         description: "Classes assigned successfully",
         color: "success",
       });
-      onAssignClassesModalOpenChange(false);
+      onAssignClassesModalClose();
       setSelectedTeacher(null);
       setSelectedClass(null);
       fetchTeachers();
@@ -295,24 +305,44 @@ export const Teachers = () => {
     }
   };
 
+  const handleDeactivateTeacher = async () => {
+    try {
+      setIsSubmitting(true);
+      await teacherService.deactivateTeacher(currentTeacherId);
+      await fetchTeachers();
+      addToast({
+        description: "Teacher deactivated successfully",
+        color: "success",
+      });
+      onDeactivateTeacherModalClose();
+    } catch (error) {
+      console.error("Error deactivating teacher:", error);
+      addToast({
+        description:
+          error.response?.data?.message || "Failed to deactivate teacher",
+        color: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDeleteTeacher = async () => {
     try {
-      setIsLoading(true);
       await teacherService.deleteTeacher(currentTeacherId);
+      await fetchTeachers();
       addToast({
         description: "Teacher deleted successfully",
         color: "success",
       });
-      fetchTeachers();
-      onDeleteTeacherModalOpenChange(false);
+      onDeleteTeacherModalClose();
     } catch (error) {
       console.error("Error deleting teacher:", error);
       addToast({
-        description: error.message || "Failed to delete teacher",
+        description:
+          error.response?.data?.message || "Failed to delete teacher",
         color: "error",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -394,6 +424,7 @@ export const Teachers = () => {
                 <TableColumn>QUALIFICATION</TableColumn>
                 <TableColumn>SPECIALIZATION</TableColumn>
                 <TableColumn>CLASS</TableColumn>
+                <TableColumn>STATUS</TableColumn>
                 <TableColumn className="w-1/6">ACTIONS</TableColumn>
               </TableHeader>
               <TableBody emptyContent={"No teachers to display."}>
@@ -404,39 +435,72 @@ export const Teachers = () => {
                     <TableCell>{tch?.specialization || "0"}</TableCell>
                     <TableCell>{tch?.class_name || "N/A"}</TableCell>
                     <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          color="primary"
+                      <Chip
+                        size="sm"
+                        color={tch.status === "Active" ? "success" : "danger"}
+                      >
+                        {tch.status}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button size="sm" variant="flat" isIconOnly>
+                            <Icon icon="lucide:ellipsis-vertical" />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          aria-label="Teacher actions"
                           variant="flat"
-                          onPress={() => {
-                            setSelectedTeacher(tch);
-                            setSelectedClass(tch.class_id.toString());
-                            onAssignClassesModalOpen();
+                          onAction={(key) => {
+                            if (key === "deactivate") {
+                              setCurrentTeacherId(tch.user_id);
+                              onDeactivateTeacherModalOpen();
+                            } else if (key === "delete") {
+                              setCurrentTeacherId(tch.user_id);
+                              onDeleteTeacherModalOpen();
+                            }
                           }}
                         >
-                          Assign Class
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="primary"
-                          variant="flat"
-                          onPress={() => handleEditTeacher(tch)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="danger"
-                          variant="flat"
-                          onPress={() => {
-                            setCurrentTeacherId(tch.user_id);
-                            onDeleteTeacherModalOpen();
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      </div>
+                          <DropdownItem
+                            key="assign"
+                            color="default"
+                            onPress={() => {
+                              setSelectedTeacher(tch);
+                              setSelectedClass(tch.class_id?.toString() || "");
+                              onAssignClassesModalOpen();
+                            }}
+                          >
+                            Assign Class
+                          </DropdownItem>
+                          <DropdownItem
+                            key="edit"
+                            color="primary"
+                            onPress={() => handleEditTeacher(tch)}
+                          >
+                            Edit
+                          </DropdownItem>
+                          {tch.status === "Active" && (
+                            <DropdownItem
+                              key="deactivate"
+                              color="warning"
+                              onPress={() => {
+                                setCurrentTeacherId(tch.user_id);
+                                onDeactivateTeacherModalOpen();
+                              }}
+                            >
+                              Deactivate
+                            </DropdownItem>
+                          )}
+                          <DropdownItem
+                            key="delete"
+                            color="danger"
+                            className="text-danger"
+                          >
+                            Delete Permanently
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -448,6 +512,7 @@ export const Teachers = () => {
 
       {/* Teacher Modal */}
       <Modal
+        size="xl"
         isOpen={isTeacherModalOpen}
         onOpenChange={onTeacherModalOpenChange}
       >
@@ -458,97 +523,112 @@ export const Teachers = () => {
                 {isEditing ? "Edit Teacher" : "Create Teacher"}
               </ModalHeader>
               <ModalBody>
-                <Input
-                  label="Name"
-                  placeholder="Enter teacher name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  isRequired
-                />
-                <Input
-                  label="Email"
-                  placeholder="Enter teacher email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  isRequired
-                />
-                {!isEditing && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Name"
+                      placeholder="Enter teacher name"
+                      value={formData.name}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
+                      isRequired
+                    />
+                    <Input
+                      label="Email"
+                      placeholder="Enter teacher email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
+                      isRequired
+                    />
+                  </div>
+
+                  {!isEditing && (
+                    <Input
+                      endContent={
+                        <button
+                          aria-label="toggle password visibility"
+                          className="focus:outline-none"
+                          type="button"
+                          onClick={toggleVisibility}
+                        >
+                          {isVisible ? (
+                            <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                          ) : (
+                            <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
+                          )}
+                        </button>
+                      }
+                      label="Password"
+                      placeholder="Enter your password"
+                      type={isVisible ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) =>
+                        handleInputChange("password", e.target.value)
+                      }
+                    />
+                  )}
                   <Input
-                    endContent={
-                      <button
-                        aria-label="toggle password visibility"
-                        className="focus:outline-none"
-                        type="button"
-                        onClick={toggleVisibility}
-                      >
-                        {isVisible ? (
-                          <EyeSlashFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-                        ) : (
-                          <EyeFilledIcon className="text-2xl text-default-400 pointer-events-none" />
-                        )}
-                      </button>
-                    }
-                    label="Password"
-                    placeholder="Enter your password"
-                    type={isVisible ? "text" : "password"}
-                    value={formData.password}
+                    label="Qualification"
+                    placeholder="Enter teacher qualification"
+                    value={formData.qualification}
                     onChange={(e) =>
-                      handleInputChange("password", e.target.value)
+                      handleInputChange("qualification", e.target.value)
                     }
+                    isRequired
                   />
-                )}
-                <Input
-                  label="Qualification"
-                  placeholder="Enter teacher qualification"
-                  value={formData.qualification}
-                  onChange={(e) =>
-                    handleInputChange("qualification", e.target.value)
-                  }
-                  isRequired
-                />
-                <Input
-                  label="Specialization"
-                  placeholder="Enter teacher specialization"
-                  value={formData.specialization}
-                  onChange={(e) =>
-                    handleInputChange("specialization", e.target.value)
-                  }
-                  isRequired
-                />
-                <DateInput
-                  label="Joining Date"
-                  placeholder="Enter joining date"
-                  value={formData?.joining_date}
-                  onChange={(value) => handleInputChange("joining_date", value)}
-                  isRequired
-                />
-                <Select
-                  label="Class"
-                  placeholder="Select class"
-                  defaultSelectedKeys={[formData?.class_id]}
-                  selectedKeys={[formData?.class_id]}
-                  onChange={(e) =>
-                    handleInputChange("class_id", e.target.value)
-                  }
-                >
-                  {classes?.map((cls) => (
-                    <SelectItem key={cls?.class_id}>
-                      {cls?.class_name}
-                    </SelectItem>
-                  ))}
-                </Select>
-                <Select
-                  label="Status"
-                  placeholder="Select status"
-                  defaultSelectedKeys={[formData?.status]}
-                  selectedKeys={[formData?.status]}
-                  onChange={(e) => handleInputChange("status", e.target.value)}
-                >
-                  {["Active", "On Leave", "Inactive"].map((status) => (
-                    <SelectItem key={status}>{status}</SelectItem>
-                  ))}
-                </Select>
+                  <Input
+                    label="Specialization"
+                    placeholder="Enter teacher specialization"
+                    value={formData.specialization}
+                    onChange={(e) =>
+                      handleInputChange("specialization", e.target.value)
+                    }
+                    isRequired
+                  />
+                  <DateInput
+                    label="Joining Date"
+                    placeholder="Enter joining date"
+                    value={formData?.joining_date}
+                    onChange={(value) =>
+                      handleInputChange("joining_date", value)
+                    }
+                    isRequired
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select
+                      label="Class"
+                      placeholder="Select class"
+                      defaultSelectedKeys={[formData?.class_id]}
+                      selectedKeys={[formData?.class_id]}
+                      onChange={(e) =>
+                        handleInputChange("class_id", e.target.value)
+                      }
+                    >
+                      {classes?.map((cls) => (
+                        <SelectItem key={cls?.class_id}>
+                          {cls?.class_name}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                    <Select
+                      label="Status"
+                      placeholder="Select status"
+                      defaultSelectedKeys={[formData?.status]}
+                      selectedKeys={[formData?.status]}
+                      onChange={(e) =>
+                        handleInputChange("status", e.target.value)
+                      }
+                    >
+                      {["Active", "On Leave", "Inactive"].map((status) => (
+                        <SelectItem key={status}>{status}</SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
               </ModalBody>
               <ModalFooter>
                 <Button
@@ -576,7 +656,7 @@ export const Teachers = () => {
       {/* Delete Teacher Modal */}
       <Modal
         isOpen={isDeleteTeacherModalOpen}
-        onOpenChange={onDeleteTeacherModalOpenChange}
+        onClose={onDeleteTeacherModalClose}
         size="lg"
       >
         <ModalContent>
@@ -605,10 +685,42 @@ export const Teachers = () => {
         </ModalContent>
       </Modal>
 
+      {/* Delete Teacher Modal */}
+      <Modal
+        isOpen={isDeactivateTeacherModalOpen}
+        onClose={onDeactivateTeacherModalClose}
+        size="lg"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Deactivate Teacher
+              </ModalHeader>
+              <ModalBody>
+                <p>Are you sure you want to deactivate this teacher?</p>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={handleDeactivateTeacher}
+                  isLoading={isSubmitting}
+                >
+                  Deactivate Teacher
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
       {/* Assign Classes Modal */}
       <Modal
         isOpen={isAssignClassesModalOpen}
-        onOpenChange={onAssignClassesModalOpenChange}
+        onOpenChange={onAssignClassesModalClose}
       >
         <ModalContent>
           {(onClose) => (
@@ -617,14 +729,12 @@ export const Teachers = () => {
                 Assign Classes to {selectedTeacher?.name}
               </ModalHeader>
               <ModalBody>
-              <Select
+                <Select
                   label="Class"
                   placeholder="Select class"
                   defaultSelectedKeys={[selectedClass]}
                   selectedKeys={[selectedClass]}
-                  onChange={(e) =>
-                    setSelectedClass(e.target.value)
-                  }
+                  onChange={(e) => setSelectedClass(e.target.value)}
                 >
                   {classes?.map((cls) => (
                     <SelectItem key={cls?.class_id.toString()}>

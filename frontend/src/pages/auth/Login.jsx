@@ -39,14 +39,25 @@ export const Login = () => {
           color: "success",
         });
         setTimeout(() => {
-          localStorage.setItem("educonnect_token", res?.data?.token);
-          localStorage.setItem("educonnect_role", res?.data?.user?.role);
+          authService.storeAuthData(
+            res?.data?.token,
+            res?.data?.hasActiveSubscription,
+            res?.data?.user
+          );
           if (res?.data?.user?.role === "Parent") {
             navigate("/parent");
           } else if (res?.data?.user?.role === "Teacher") {
             navigate("/teacher");
-          } else if (res?.data?.user?.role === "School_Admin") {
+          } else if (
+            res?.data?.user?.role === "School_Admin" &&
+            res?.data?.hasActiveSubscription
+          ) {
             navigate("/school");
+          } else if (
+            res?.data?.user?.role === "School_Admin" &&
+            !res?.data?.hasActiveSubscription
+          ) {
+            navigate("/subscription");
           } else if (res?.data?.user?.role === "EduConnect_Admin") {
             navigate("/admin");
           }

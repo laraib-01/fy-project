@@ -55,7 +55,7 @@ export const LandingPage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="py-20 px-4 md:px-6 lg:px-8 bg-content1">
+      <div id="features" className="py-20 px-4 md:px-6 lg:px-8 bg-content1">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-foreground-900">
@@ -121,7 +121,7 @@ export const LandingPage = () => {
       </div>
 
       {/* Testimonials */}
-      <div className="py-20 px-4 md:px-6 lg:px-8 bg-content2">
+      <div id="about" className="py-20 px-4 md:px-6 lg:px-8 bg-content2">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-foreground-900">

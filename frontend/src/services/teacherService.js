@@ -44,7 +44,19 @@ const teacherService = {
     }
   },
 
-  // Delete a teacher (soft delete, school admin only)
+  // Deactivate a teacher (soft delete, school admin only)
+  deactivateTeacher: async (teacherId) => {
+    try {
+      const response = await api.post(
+        `${API_ENDPOINTS.TEACHERS.BY_ID(teacherId)}/deactivate`
+      );
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Permanently delete a teacher (hard delete, school admin only)
   deleteTeacher: async (teacherId) => {
     try {
       const response = await api.delete(

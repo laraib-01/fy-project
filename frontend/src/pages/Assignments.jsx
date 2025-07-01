@@ -33,6 +33,7 @@ import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
 import classService from "../services/classService";
 import assignmentService from "../services/assignmentService";
+import { parseDate, parseZonedDateTime } from "@internationalized/date";
 
 export const Assignments = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,6 +54,8 @@ export const Assignments = () => {
     points: 100,
   });
 
+  console.log("formData", formData);
+
   const {
     isOpen: isAssignmentModalOpen,
     onOpen: onAssignmentModalOpen,
@@ -65,7 +68,7 @@ export const Assignments = () => {
     onOpenChange: onDeleteModalOpenChange,
   } = useDisclosure();
 
-  console.log("assignments", assignments)
+  console.log("assignments", assignments);
 
   // Fetch all classes from the school using classService
   const fetchClasses = async () => {
@@ -85,7 +88,10 @@ export const Assignments = () => {
 
   const fetchAssignments = async () => {
     try {
-      const response = await assignmentService.getAllAssignments(statusFilter, selectedClass);
+      const response = await assignmentService.getAllAssignments(
+        statusFilter,
+        selectedClass
+      );
       console.log(response);
       setAssignments(response?.assignments || []);
     } catch (error) {
@@ -118,7 +124,7 @@ export const Assignments = () => {
     setFormData({
       title: "",
       description: "",
-      dueDate: "",
+      dueDate: null,
       classId: "",
       status: "draft",
       points: 100,
@@ -148,7 +154,8 @@ export const Assignments = () => {
       points: formData.points,
     };
 
-    console.log("payload", payload);
+    console.log("isEditing", isEditing);
+    console.log("currentAssignmentId", currentAssignmentId);
 
     try {
       setIsSubmitting(true);
@@ -181,6 +188,29 @@ export const Assignments = () => {
     }
   };
 
+  const handleEditAssignment = (assignment) => {
+    let parsedDueDate;
+
+    try {
+      const dueDateTime = parseZonedDateTime(assignment.dueDate);
+      parsedDueDate = dueDateTime.toCalendarDate();
+    } catch (error) {
+      parsedDueDate = parseDate(assignment.dueDate.split("T")[0]);
+    }
+
+    setFormData({
+      title: assignment.title || "",
+      description: assignment.description || "",
+      dueDate: parsedDueDate,
+      classId: assignment.classId.toString() || "",
+      status: assignment.status.toLowerCase() || "draft",
+      points: assignment.points || 100,
+    });
+    setCurrentAssignmentId(assignment.assignmentId);
+    setIsEditing(true);
+    onAssignmentModalOpen();
+  };
+
   const handleDeleteAssignment = async () => {
     try {
       await assignmentService.deleteAssignment(currentAssignmentId);
@@ -210,14 +240,6 @@ export const Assignments = () => {
             <h1 className="text-2xl font-bold">Assignments</h1>
             <p className="text-foreground-600">Manage your assignments</p>
           </div>
-
-          <Input
-            placeholder="Search assignments..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md bg-white"
-            startContent={<Icon icon="lucide:search" />}
-          />
           <Button
             color="primary"
             startContent={<Icon icon="lucide:plus" />}
@@ -269,23 +291,21 @@ export const Assignments = () => {
             <Table removeWrapper aria-label="Students table">
               <TableHeader>
                 <TableColumn>Title</TableColumn>
-                <TableColumn>Description</TableColumn>
                 <TableColumn>Due Date</TableColumn>
                 <TableColumn>Class</TableColumn>
                 <TableColumn>Status</TableColumn>
                 <TableColumn>Actions</TableColumn>
               </TableHeader>
-              <TableBody>
+              <TableBody emptyContent="No assignments found">
                 {assignments?.map((assignment) => (
                   <TableRow key={assignment.id}>
                     <TableCell>{assignment.title}</TableCell>
-                    <TableCell>{assignment.description}</TableCell>
                     <TableCell>
                       {new Intl.DateTimeFormat("en-US", {
                         dateStyle: "medium",
-                      }).format(new Date(assignment.due_date))}
+                      }).format(new Date(assignment.dueDate))}
                     </TableCell>
-                    <TableCell>{assignment.class_name || "N/A"}</TableCell>
+                    <TableCell>{assignment.className || "N/A"}</TableCell>
                     <TableCell>
                       <Chip
                         color={
@@ -299,26 +319,27 @@ export const Assignments = () => {
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button size="sm" variant="flat" isIconOnly>
-                            <Icon icon="lucide:more-vertical" />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu>
-                          <DropdownItem>View</DropdownItem>
-                          <DropdownItem>Edit</DropdownItem>
-                          <DropdownItem
-                            color="danger"
-                            onPress={() => {
-                              setCurrentAssignmentId(assignment.assignment_id);
-                              onDeleteModalOpen();
-                            }}
-                          >
-                            Delete
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="flat"
+                          onPress={() => handleEditAssignment(assignment)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          onPress={() => {
+                            setCurrentAssignmentId(assignment.assignmentId);
+                            onDeleteModalOpen();
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -359,6 +380,7 @@ export const Assignments = () => {
                     label="Class"
                     name="classId"
                     selectedKeys={[formData.classId]}
+                    value={formData.classId}
                     onChange={(e) =>
                       handleInputChange("classId", e.target.value)
                     }
@@ -458,7 +480,8 @@ export const Assignments = () => {
               Are you sure you want to delete the assignment "
               {
                 assignments?.find(
-                  (assignment) => assignment.assignment_id === currentAssignmentId
+                  (assignment) =>
+                    assignment.assignmentId === currentAssignmentId
                 )?.title
               }
               "? This action cannot be undone.

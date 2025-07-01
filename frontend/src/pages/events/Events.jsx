@@ -282,72 +282,82 @@ export const Events = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {upcomingEvents.map((event) => (
-                    <div
-                      key={event.event_id}
-                      className="flex items-start gap-4 border-b border-divider pb-6 last:border-0"
-                    >
-                      <div className="bg-content2 rounded-lg p-3 text-center min-w-[80px]">
-                        <div className="text-sm text-foreground-500">
-                          {new Date(event.event_date).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                            }
-                          )}
+                  {upcomingEvents.map((event) => {
+                    const formatTimeTo12Hour = (time24) => {
+                      const [hours, minutes] = time24.split(":").map(Number);
+                      const period = hours >= 12 ? "PM" : "AM";
+                      const hours12 = hours % 12 || 12; // Convert 0 to 12 for midnight
+                      return `${hours12}:${minutes
+                        .toString()
+                        .padStart(2, "0")} ${period}`;
+                    };
+                    return (
+                      <div
+                        key={event.event_id}
+                        className="flex items-start gap-4 border-b border-divider pb-6 last:border-0"
+                      >
+                        <div className="bg-content2 rounded-lg p-3 text-center min-w-[80px]">
+                          <div className="text-sm text-foreground-500">
+                            {new Date(event.event_date).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                              }
+                            )}
+                          </div>
+                          <div className="text-2xl font-bold">
+                            {new Date(event.event_date).getDate()}
+                          </div>
+                          <div className="text-xs text-foreground-500">
+                            {new Date(event.event_date).getFullYear()}
+                          </div>
                         </div>
-                        <div className="text-2xl font-bold">
-                          {new Date(event.event_date).getDate()}
+                        <div className="flex-grow">
+                          <h4 className="text-lg font-medium">
+                            {event.event_name}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-2 text-sm text-foreground-600">
+                            <Icon
+                              icon="lucide:clock"
+                              className="text-foreground-400"
+                            />
+                            <span>{formatTimeTo12Hour(event.event_time)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-sm text-foreground-600">
+                            <Icon
+                              icon="lucide:map-pin"
+                              className="text-foreground-400"
+                            />
+                            <span>{event.event_location}</span>
+                          </div>
                         </div>
-                        <div className="text-xs text-foreground-500">
-                          {new Date(event.event_date).getFullYear()}
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            isIconOnly
+                            onPress={() => handleEditEvent(event)}
+                            isDisabled={isLoading}
+                          >
+                            <Icon icon="lucide:edit-2" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            isIconOnly
+                            color="danger"
+                            onPress={() => {
+                              setCurrentEventId(event.event_id);
+                              onDeleteEventModalOpen();
+                            }}
+                            isDisabled={isLoading}
+                          >
+                            <Icon icon="lucide:trash-2" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex-grow">
-                        <h4 className="text-lg font-medium">
-                          {event.event_name}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-foreground-600">
-                          <Icon
-                            icon="lucide:clock"
-                            className="text-foreground-400"
-                          />
-                          <span>{event.event_time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-foreground-600">
-                          <Icon
-                            icon="lucide:map-pin"
-                            className="text-foreground-400"
-                          />
-                          <span>{event.event_location}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          isIconOnly
-                          onPress={() => handleEditEvent(event)}
-                          isDisabled={isLoading}
-                        >
-                          <Icon icon="lucide:edit-2" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          isIconOnly
-                          color="danger"
-                          onPress={() => {
-                            setCurrentEventId(event.event_id);
-                            onDeleteEventModalOpen();
-                          }}
-                          isDisabled={isLoading}
-                        >
-                          <Icon icon="lucide:trash-2" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardBody>

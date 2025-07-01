@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS Users (
   name VARCHAR(100) NOT NULL,                         -- Full name
   email VARCHAR(100) UNIQUE NOT NULL,                 -- Must be unique for login
   password VARCHAR(255) NOT NULL,                     -- Hashed password (DO NOT store raw text)
+  reset_token VARCHAR(255) NULL,
+  reset_token_expires DATETIME NULL,
   FOREIGN KEY (school_id) REFERENCES Schools(school_id) -- Link to school
 );
 

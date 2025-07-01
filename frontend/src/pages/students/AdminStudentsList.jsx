@@ -295,7 +295,7 @@ export const AdminStudentsList = () => {
       firstName: student.first_name || "",
       lastName: student.last_name || "",
       dateOfBirth: parsedDateOfBirth,
-      gender: student.gender || "",
+      gender: student.gender?.toLowerCase() || "",
       address: student.address || "",
       phoneNumber: student.phone_number || "",
       enrollmentDate: parsedEnrollmentDate,
@@ -414,7 +414,7 @@ export const AdminStudentsList = () => {
                 <TableColumn>ROLL NUMBER</TableColumn>
                 <TableColumn>ACTIONS</TableColumn>
               </TableHeader>
-              <TableBody>
+              <TableBody emptyContent="No students found">
                 {filteredStudents?.map((student) => (
                   <TableRow key={student.student_id}>
                     <TableCell>

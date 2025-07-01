@@ -11,10 +11,11 @@ dotenv.config();
 
 // Define database configuration using environment variables
 const pool = mysql.createPool({
-  host: process.env.DB_HOST, // MySQL server host (e.g. localhost)
-  user: process.env.DB_USER, // MySQL username
-  password: process.env.DB_PASSWORD, // MySQL password
-  database: process.env.DB_NAME, // Name of the database to use
+  host: process.env.DB_HOST || "localhost", // MySQL server host (e.g. localhost)
+  user: process.env.DB_USER || "root", // MySQL username
+  password: process.env.DB_PASSWORD || "", // MySQL password
+  database: process.env.DB_NAME || "educonnect", // Name of the database to use
+  port: process.env.DB_PORT || 3307, // <-- ADD THIS LINE
   waitForConnections: true, // Queue connections if none are available
   connectionLimit: 10, // Max number of connections in the pool
   queueLimit: 0, // Max number of connection requests (0 = unlimited)

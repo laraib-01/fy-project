@@ -253,7 +253,7 @@ export const SchoolAdminDashboard = () => {
                       <div>
                         <h4 className="font-medium">{event.event_name}</h4>
                         <p className="text-xs text-foreground-500 mt-1">
-                          {formatTimeTo12Hour(event.event_time)}
+                          {event.event_time}
                         </p>
                       </div>
                     </div>

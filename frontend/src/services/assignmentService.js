@@ -103,7 +103,7 @@ const assignmentService = {
       const response = await api.delete(
         API_ENDPOINTS.ASSIGNMENTS.BY_ID(assignmentId)
       );
-      return response.data;
+      return response;
     } catch (err) {
       console.error(`Error deleting assignment ${assignmentId}:`, err);
       throw err;

@@ -1,5 +1,22 @@
 import db from "../config/db.js";
 
+// Helper function to format time to 12-hour format
+const formatTimeToAMPM = (timeString) => {
+  if (!timeString) return "";
+
+  // Split the time string into hours and minutes
+  const [hours, minutes] = timeString.split(":");
+  const hour = parseInt(hours, 10);
+
+  // Determine AM or PM
+  const period = hour >= 12 ? "PM" : "AM";
+
+  // Convert to 12-hour format
+  const hour12 = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+
+  return `${hour12}:${minutes} ${period}`;
+};
+
 // Utility to format responses
 const sendResponse = (res, statusCode, status, data, message) => {
   return res.status(statusCode).json({ status, data, message });
@@ -46,14 +63,9 @@ export const getSchoolDashboardStats = async (req, res) => {
       [school_id]
     );
 
-    // 3. Get upcoming events (next 7 days)
+    // 3. Get upcoming events
     const [upcomingEvents] = await db.query(
-      `SELECT event_id, event_name, event_date, DATE_FORMAT(event_time, '%H:%i') as event_time 
-       FROM Events 
-       WHERE school_id = ? 
-         AND event_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 7 DAY)
-       ORDER BY event_date, event_time
-       LIMIT 5`,
+      `SELECT * FROM events WHERE school_id = ? AND (event_date > CURDATE() OR (event_date = CURDATE() AND event_time > CURTIME()))`,
       [school_id]
     );
 
@@ -200,7 +212,10 @@ export const getSchoolDashboardStats = async (req, res) => {
               : 0,
         })),
       },
-      upcomingEvents,
+      upcomingEvents: upcomingEvents.map((event) => ({
+        ...event,
+        event_time: formatTimeToAMPM(event.event_time), // Format time to 12-hour format
+      })),
       recentActivities,
       classStats: classWiseStats,
       userGrowth: userGrowthData,

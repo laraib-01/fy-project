@@ -25,6 +25,9 @@ import { Classes } from "./pages/classes/Classes";
 import { Teachers } from "./pages/teachers/Teachers";
 import { AdminStudentsList } from "./pages/students/AdminStudentsList";
 import { TeacherStudentsList } from "./pages/students/TeacherStudentsList";
+import { SubscriptionPlans } from "./pages/subscriptions/SubscriptionPlans";
+import { ForgotPassword } from "./pages/auth/ForgotPassword";
+import { ResetPassword } from "./pages/auth/ResetPassword";
 
 const AppWrapper = () => {
   return (
@@ -32,6 +35,10 @@ const AppWrapper = () => {
       <Route exact path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      <Route path="/subscription" element={<SubscriptionPlans />} />
       <Route
         path="/teacher"
         element={

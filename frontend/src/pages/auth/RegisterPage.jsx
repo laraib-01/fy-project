@@ -10,6 +10,7 @@ import {
   RadioGroup,
   Radio,
   Spacer,
+  Textarea,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Navbar } from "../../components/Navbar";
@@ -25,8 +26,10 @@ export const RegisterPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("Parent");
   const [schoolName, setSchoolName] = useState("");
+  const [schoolEmail, setSchoolEmail] = useState("");
+  const [schoolAddress, setSchoolAddress] = useState("");
+  const [schoolPhone, setSchoolPhone] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -48,8 +51,10 @@ export const RegisterPage = () => {
     else if (password !== confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
 
-    if (role === "School_Admin" && !schoolName)
-      newErrors.schoolName = "School name is required";
+    if (!schoolName) newErrors.schoolName = "School name is required";
+    if (!schoolEmail) newErrors.schoolEmail = "School email is required";
+    if (!schoolAddress) newErrors.schoolAddress = "School address is required";
+    if (!schoolPhone) newErrors.schoolPhone = "School phone is required";
 
     if (!agreeTerms)
       newErrors.agreeTerms = "You must agree to the terms and conditions";
@@ -60,15 +65,19 @@ export const RegisterPage = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     if (!validate()) return;
+    setIsLoading(true);
 
     try {
       const res = await authService.register({
         name: `${firstName} ${lastName}`,
         email: email,
         password: password,
-        role: role,
+        role: "School_Admin",
+        schoolName: schoolName,
+        schoolEmail: schoolEmail,
+        schoolAddress: schoolAddress,
+        schoolPhone: schoolPhone,
       });
 
       if (res?.status === "success") {
@@ -78,16 +87,14 @@ export const RegisterPage = () => {
         });
 
         setTimeout(() => {
-          localStorage.setItem("educonnect_token", res?.data?.token);
-          localStorage.setItem("educonnect_role", res?.data?.user?.role);
-          if (res?.data?.user?.role === "Parent") {
-            navigate("/parent");
-          } else if (res?.data?.user?.role === "Teacher") {
-            navigate("/teacher");
-          } else if (res?.data?.user?.role === "School_Admin") {
+          authService.storeAuthData(res?.data?.token, res?.data?.user);
+          if (
+            res?.data?.user?.role === "School_Admin" &&
+            res?.data?.hasActiveSubscription
+          ) {
             navigate("/school");
-          } else if (res?.data?.user?.role === "EduConnect_Admin") {
-            navigate("/admin");
+          } else {
+            navigate("/subscription");
           }
           setIsLoading(false);
         }, 1000);
@@ -104,7 +111,7 @@ export const RegisterPage = () => {
         title: error?.message,
         color: "danger",
       });
-    } 
+    }
   };
 
   return (
@@ -114,7 +121,7 @@ export const RegisterPage = () => {
         <Navbar />
 
         <div className="flex-grow flex items-center justify-center px-4 py-12">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-xl">
             <CardBody className="p-8">
               <div className="text-center mb-6">
                 <h1 className="text-2xl font-bold">Create Your Account</h1>
@@ -133,7 +140,6 @@ export const RegisterPage = () => {
                       onValueChange={setFirstName}
                       isInvalid={!!errors.firstName}
                       errorMessage={errors.firstName}
-                      isRequired
                     />
 
                     <Input
@@ -143,7 +149,6 @@ export const RegisterPage = () => {
                       onValueChange={setLastName}
                       isInvalid={!!errors.lastName}
                       errorMessage={errors.lastName}
-                      isRequired
                     />
                   </div>
 
@@ -161,59 +166,44 @@ export const RegisterPage = () => {
                     }
                     isInvalid={!!errors.email}
                     errorMessage={errors.email}
-                    isRequired
                   />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      type="password"
+                      label="Password"
+                      placeholder="Create a password"
+                      value={password}
+                      onValueChange={setPassword}
+                      startContent={
+                        <Icon
+                          icon="lucide:lock"
+                          className="text-foreground-400"
+                        />
+                      }
+                      isInvalid={!!errors.password}
+                      errorMessage={errors.password}
+                    />
 
-                  <Input
-                    type="password"
-                    label="Password"
-                    placeholder="Create a password"
-                    value={password}
-                    onValueChange={setPassword}
-                    startContent={
-                      <Icon
-                        icon="lucide:lock"
-                        className="text-foreground-400"
-                      />
-                    }
-                    isInvalid={!!errors.password}
-                    errorMessage={errors.password}
-                    isRequired
-                  />
-
-                  <Input
-                    type="password"
-                    label="Confirm Password"
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onValueChange={setConfirmPassword}
-                    startContent={
-                      <Icon
-                        icon="lucide:lock"
-                        className="text-foreground-400"
-                      />
-                    }
-                    isInvalid={!!errors.confirmPassword}
-                    errorMessage={errors.confirmPassword}
-                    isRequired
-                  />
-
-                  <div>
-                    <p className="text-sm font-medium mb-2">
-                      I am registering as:
-                    </p>
-                    <RadioGroup
-                      orientation="horizontal"
-                      value={role}
-                      onValueChange={setRole}
-                    >
-                      <Radio value="Parent">Parent</Radio>
-                      <Radio value="Teacher">Teacher</Radio>
-                      <Radio value="School_Admin">School Admin</Radio>
-                    </RadioGroup>
+                    <Input
+                      type="password"
+                      label="Confirm Password"
+                      placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onValueChange={setConfirmPassword}
+                      startContent={
+                        <Icon
+                          icon="lucide:lock"
+                          className="text-foreground-400"
+                        />
+                      }
+                      isInvalid={!!errors.confirmPassword}
+                      errorMessage={errors.confirmPassword}
+                    />
                   </div>
-
-                  {role === "School_Admin" && (
+                  <div className="space-y-2 pt-4 border-t border-default-200">
+                    <h3 className="text-lg font-medium">School Information</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
                       label="School Name"
                       placeholder="Enter school name"
@@ -223,7 +213,34 @@ export const RegisterPage = () => {
                       errorMessage={errors.schoolName}
                       isRequired
                     />
-                  )}
+                    <Input
+                      label="School Email"
+                      placeholder="Enter school email"
+                      value={schoolEmail}
+                      onValueChange={setSchoolEmail}
+                      isInvalid={!!errors.schoolEmail}
+                      errorMessage={errors.schoolEmail}
+                      isRequired
+                    />
+                  </div>
+                  <Textarea
+                    label="School Address"
+                    placeholder="Enter school address"
+                    value={schoolAddress}
+                    onValueChange={setSchoolAddress}
+                    isInvalid={!!errors.schoolAddress}
+                    errorMessage={errors.schoolAddress}
+                    isRequired
+                  />
+                  <Input
+                    label="School Phone"
+                    placeholder="Enter school phone"
+                    value={schoolPhone}
+                    onValueChange={setSchoolPhone}
+                    isInvalid={!!errors.schoolPhone}
+                    errorMessage={errors.schoolPhone}
+                    isRequired
+                  />
 
                   <Checkbox
                     isSelected={agreeTerms}

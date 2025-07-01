@@ -4,6 +4,9 @@ import {
   login,
   logout,
   getProfile,
+  forgotPassword,
+  resetPassword,
+  validateResetToken,
 } from "../controllers/userController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleCheck from "../middleware/roleMiddleware.js";
@@ -15,10 +18,6 @@ import {
   updateEvent,
 } from "../controllers/eventsController.js";
 import { createRecord, getRecords } from "../controllers/records.js";
-import {
-  createSubscription,
-  getSubscriptions,
-} from "../controllers/subscriptions.js";
 import {
   createSubscriptionPlan,
   getSubscriptionPlans,
@@ -63,6 +62,7 @@ import {
   assignClass,
   createTeacher,
   deleteTeacher,
+  deactivateTeacher,
   getAllTeachers,
   getTeacherById,
   updateTeacher,
@@ -84,16 +84,29 @@ import {
   getAssignmentSubmissions,
   getAssignmentSubmissionSummary,
 } from "../controllers/assignmentsController.js";
+import {
+  cancelSubscription,
+  createSubscription,
+  getCurrentSubscription,
+  getPlans,
+  getSubscriptionHistory,
+} from "../controllers/subscriptionController.js";
 
 const router = express.Router();
 
 //
 // 🧑‍💻 User Routes
 //
+// Auth routes
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);
 router.get("/me", authMiddleware, getProfile);
+
+// Password reset routes
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+router.get("/validate-reset-token/:token", validateResetToken);
 
 //
 // 📅 Events
@@ -110,13 +123,6 @@ router.delete("/events/:id", authMiddleware, deleteEvent); // Delete event
 router.use("/records", authMiddleware);
 router.post("/records", createRecord); // Create record
 router.get("/records/:student_id", getRecords); // Get records by student
-
-//
-// 💳 Subscriptions
-//
-router.use("/subscriptions", authMiddleware);
-router.post("/subscriptions", createSubscription); // Create subscription
-router.get("/subscriptions", getSubscriptions); // Get all
 
 //
 // 📝 Assignments
@@ -182,12 +188,19 @@ router.post(
   createTeacher
 ); // Create teacher (School Admin only)
 router.put("/teachers/:id", authMiddleware, updateTeacher); // Update teacher
+router.post(
+  "/teachers/:id/deactivate",
+  authMiddleware,
+  roleCheck(["School_Admin"]),
+  deactivateTeacher
+); // Deactivate teacher (soft delete)
+
 router.delete(
   "/teachers/:id",
   authMiddleware,
   roleCheck(["School_Admin"]),
   deleteTeacher
-); // Delete teacher (School Admin only)
+); // Permanently delete teacher (hard delete)
 router.post(
   "/teachers/:id",
   authMiddleware,
@@ -333,6 +346,15 @@ router.delete(
   authMiddleware,
   deleteSubscriptionPlan
 );
+
+//
+// 📝 Subscriptions
+//
+router.get("/subscriptions/plans", getPlans); // Public - Get all available subscription plans
+router.get("/subscriptions/current", authMiddleware, getCurrentSubscription); // Get current subscription
+router.post("/subscriptions", authMiddleware, createSubscription); // Create new subscription
+router.post("/subscriptions/cancel", authMiddleware, cancelSubscription); // Cancel subscription
+router.get("/subscriptions/history", authMiddleware, getSubscriptionHistory); // Get subscription history
 
 //
 // 💳 Transactions

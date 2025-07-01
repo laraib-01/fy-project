@@ -162,7 +162,7 @@ export const SchoolAdminLayout = ({ children }) => {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="User Actions">
-                <DropdownItem
+                {/* <DropdownItem
                   key="profile"
                   startContent={<Icon icon="lucide:user" />}
                   onPress={() => navigate("/admin/profile")}
@@ -175,7 +175,7 @@ export const SchoolAdminLayout = ({ children }) => {
                   onPress={() => navigate("/admin/settings")}
                 >
                   Settings
-                </DropdownItem>
+                </DropdownItem> */}
                 <DropdownItem
                   key="logout"
                   color="danger"

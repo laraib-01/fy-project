@@ -174,7 +174,7 @@ const ParentLayout = ({ children }) => {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="User Actions">
-                <DropdownItem
+                {/* <DropdownItem
                   key="profile"
                   startContent={<Icon icon="lucide:user" />}
                 >
@@ -185,19 +185,7 @@ const ParentLayout = ({ children }) => {
                   startContent={<Icon icon="lucide:settings" />}
                 >
                   Settings
-                </DropdownItem>
-                <DropdownItem
-                  key="subscription"
-                  startContent={<Icon icon="lucide:credit-card" />}
-                >
-                  Subscription
-                </DropdownItem>
-                <DropdownItem
-                  key="help"
-                  startContent={<Icon icon="lucide:help-circle" />}
-                >
-                  Help & Support
-                </DropdownItem>
+                </DropdownItem> */}
                 <DropdownItem
                   key="logout"
                   color="danger"
