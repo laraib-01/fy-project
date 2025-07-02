@@ -1,4 +1,10 @@
 import db from "../config/db.js";
+import {
+  createCustomer,
+  createStripeSubscription,
+  getSubscription,
+  createStripePaymentIntent,
+} from "../services/stripeService.js";
 
 // Get all available subscription plans
 export const getPlans = async (req, res) => {
@@ -6,7 +12,7 @@ export const getPlans = async (req, res) => {
     const [plans] = await db.query(
       "SELECT * FROM Subscription_Plans WHERE is_active = TRUE ORDER BY yearly_price ASC"
     );
-    
+
     return res.status(200).json({
       status: "success",
       data: plans,
@@ -65,10 +71,10 @@ export const getCurrentSubscription = async (req, res) => {
 
 // Create a new subscription
 export const createSubscription = async (req, res) => {
-  const { plan_name, billing_cycle, payment_method_nonce } = req.body;
-  
+  const { plan_name, billing_cycle, payment_method_id } = req.body;
+
   try {
-    if (!plan_name || !billing_cycle || !payment_method_nonce) {
+    if (!plan_name || !billing_cycle || !payment_method_id) {
       return res.status(400).json({
         status: "error",
         message: "Plan name, billing cycle, and payment method are required",
@@ -82,47 +88,104 @@ export const createSubscription = async (req, res) => {
       });
     }
 
-    // In a real app, you would process the payment here
-    // For now, we'll simulate a successful payment
-    const transaction_id = `TRANS-${Math.random().toString(36).substr(2, 9)}`;
-    
+    // Get school and user details
+    const [school] = await db.query(
+      "SELECT * FROM Schools WHERE school_id = ?",
+      [req.user.school_id]
+    );
+
+    if (!school || school.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "School not found",
+      });
+    }
+
     // Get plan details
     const [plans] = await db.query(
-      "SELECT * FROM Subscription_Plans WHERE plan_name = ?",
+      "SELECT * FROM Subscription_Plans WHERE plan_name = ? AND is_active = TRUE",
       [plan_name]
     );
 
     if (plans.length === 0) {
       return res.status(404).json({
         status: "error",
-        message: "Plan not found",
+        message: "Plan not found or inactive",
       });
     }
 
     const plan = plans[0];
+    const priceId =
+      billing_cycle === "yearly"
+        ? plan.stripe_yearly_price_id
+        : plan.stripe_monthly_price_id;
+    const priceAmount =
+      billing_cycle === "yearly" ? plan.yearly_price : plan.monthly_price;
+
+    // Create or get Stripe customer
+    let customerId = school[0].stripe_customer_id;
+    if (!customerId) {
+      const customer = await createCustomer(
+        {
+          ...req.user,
+          school_name: school[0].school_name,
+          school_id: school[0].school_id,
+        },
+        payment_method_id
+      );
+      customerId = customer.id;
+    }
+
+    // Create subscription in Stripe
+    const subscription = await createStripeSubscription(customerId, priceId, {
+      plan_name,
+      billing_cycle,
+      school_id: req.user.school_id,
+      user_id: req.user.id,
+      plan_id: plan.plan_id,
+      price_amount: priceAmount,
+      currency: plan.currency || "USD",
+    });
+
+    // Calculate subscription dates
     const today = new Date();
-    const endDate = new Date();
-    
-    if (billing_cycle === 'yearly') {
+    const endDate = new Date(today);
+
+    if (billing_cycle === "yearly") {
       endDate.setFullYear(today.getFullYear() + 1);
     } else {
       endDate.setMonth(today.getMonth() + 1);
     }
 
+    // Save subscription to database
     const [result] = await db.query(
       `INSERT INTO Subscriptions 
-       (school_id, plan_type, start_date, end_date, status, payment_status, transaction_id)
-       VALUES (?, ?, ?, ?, 'Active', 'Paid', ?)`,
+       (school_id, plan_type, plan_id, billing_cycle, start_date, end_date, 
+        status, payment_status, transaction_id, stripe_subscription_id, 
+        payment_method_id, amount, currency)
+       VALUES (?, ?, ?, ?, ?, ?, 'Active', 'Paid', ?, ?, ?, ?, ?)`,
       [
         req.user.school_id,
-        plan.plan_name,
+        plan_name,
+        plan.plan_id,
+        billing_cycle,
         today,
         endDate,
-        transaction_id,
+        `stripe_${subscription.subscriptionId}`,
+        subscription.subscriptionId,
+        payment_method_id,
+        priceAmount,
+        plan.currency || "USD",
       ]
     );
 
-    // Get the created subscription
+    // Update school's subscription status
+    await db.query(
+      "UPDATE Schools SET has_active_subscription = TRUE, stripe_customer_id = ? WHERE school_id = ?",
+      [customerId, req.user.school_id]
+    );
+
+    // Get the full subscription details to return
     const [subscriptions] = await db.query(
       `SELECT s.*, p.monthly_price, p.yearly_price, p.features 
        FROM Subscriptions s
@@ -131,12 +194,18 @@ export const createSubscription = async (req, res) => {
       [result.insertId]
     );
 
+    const subscriptionData = {
+      ...subscriptions[0],
+      features: JSON.parse(subscriptions[0].features || "[]"),
+    };
+
     return res.status(201).json({
       status: "success",
       message: "Subscription created successfully",
-      data: subscriptions[0],
+      data: subscriptionData,
     });
   } catch (error) {
+    // No need to rollback as we're not using transactions with the db pool directly
     console.error("Error creating subscription:", error);
     return res.status(500).json({
       status: "error",
@@ -188,6 +257,89 @@ export const cancelSubscription = async (req, res) => {
     });
   }
 };
+
+// Create a payment intent for subscription
+export const createPaymentIntent = async (req, res) => {
+  const { plan_name, billing_cycle } = req.body;
+
+  try {
+    if (!plan_name || !billing_cycle) {
+      return res.status(400).json({
+        status: "error",
+        message: "Plan name and billing cycle are required",
+      });
+    }
+
+    // Get plan details to verify it exists
+    const [plans] = await db.query(
+      "SELECT * FROM Subscription_Plans WHERE plan_name = ? AND is_active = TRUE",
+      [plan_name]
+    );
+
+    if (plans.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Plan not found or inactive",
+      });
+    }
+
+    const plan = plans[0];
+    const amount =
+      billing_cycle === "yearly"
+        ? plan.yearly_price * 100
+        : plan.monthly_price * 100; // Convert to cents
+    const currency = "usd";
+
+    // Get or create customer
+    let customerId = req.user.school_id
+      ? await getCustomerIdForSchool(req.user.school_id)
+      : null;
+
+    // Create payment intent
+    const paymentIntent = await createStripePaymentIntent({
+      amount,
+      currency,
+      customer: customerId,
+      metadata: {
+        plan_name,
+        billing_cycle,
+        school_id: req.user.school_id || "unknown",
+        user_id: req.user.id || "unknown",
+      },
+    });
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        clientSecret: paymentIntent.client_secret,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        id: paymentIntent.id,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating payment intent:", error);
+    return res.status(500).json({
+      status: "error",
+      message: error.message || "Failed to create payment intent",
+    });
+  }
+};
+
+// Helper function to get or create customer ID for a school
+async function getCustomerIdForSchool(schoolId) {
+  try {
+    const [school] = await db.query(
+      "SELECT stripe_customer_id FROM Schools WHERE school_id = ?",
+      [schoolId]
+    );
+
+    return school.length > 0 ? school[0].stripe_customer_id : null;
+  } catch (error) {
+    console.error("Error getting customer ID for school:", error);
+    return null;
+  }
+}
 
 // Get subscription history for a school
 export const getSubscriptionHistory = async (req, res) => {

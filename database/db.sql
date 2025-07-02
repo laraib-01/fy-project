@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS Schools (
   email VARCHAR(100),                       -- Email of the school (optional)
   admin_name VARCHAR(100),                  -- Name of the school admin 
   admin_email VARCHAR(100)                  -- Email of the school admin
+  stripe_customer_id VARCHAR(255),           -- Stripe customer ID (optional)
+  has_active_subscription BOOLEAN DEFAULT FALSE, -- Whether the school has an active subscription (optional)
 );
 
 
@@ -177,24 +179,37 @@ CREATE TABLE IF NOT EXISTS Event_Notifications (
 CREATE TABLE IF NOT EXISTS Subscriptions (
   subscription_id INT AUTO_INCREMENT PRIMARY KEY,     -- Unique subscription ID
   school_id INT NOT NULL,                             -- Which school
+  plan_id INT NOT NULL,                               -- Which plan
   plan_type ENUM('Basic', 'Premium', 'Enterprise') NOT NULL, -- Plan tier
+  billing_cycle ENUM('Monthly', 'Yearly') NOT NULL,   -- Billing cycle
   start_date DATE,                                    -- When it starts
   end_date DATE,                                      -- When it ends
   status ENUM('Active', 'Expired') NOT NULL,          -- Status of subscription
   payment_status ENUM('Paid', 'Unpaid') NOT NULL,     -- Whether it's paid
   transaction_id VARCHAR(255),                        -- Payment reference
+  stripe_subscription_id VARCHAR(255),                 -- Stripe subscription ID
+  payment_method_id VARCHAR(255),                      -- Payment method ID
+  amount DECIMAL(10,2),                               -- Amount paid
+  currency VARCHAR(3) DEFAULT 'USD',                   -- Currency (default USD)
   FOREIGN KEY (school_id) REFERENCES Schools(school_id)
+  FOREIGN KEY (plan_id) REFERENCES Subscription_Plans(plan_id)
 );
 
 -- 13. SUBSCRIPTION_PLANS: Defines the details of available subscription plans
 CREATE TABLE IF NOT EXISTS Subscription_Plans (
   plan_id INT AUTO_INCREMENT PRIMARY KEY,
   plan_name VARCHAR(50) NOT NULL,           -- e.g., 'Basic', 'Standard', 'Premium'
+  description TEXT,                         -- Description of the plan
   monthly_price DECIMAL(10,2) NOT NULL,     -- Monthly price in USD
   yearly_price DECIMAL(10,2) NOT NULL,      -- Yearly price in USD (discounted)
   max_teachers INT,                         -- NULL means unlimited
   max_parents INT,                          -- NULL means unlimited
   features TEXT,                            -- JSON array of features
+  stripe_monthly_product_id VARCHAR(255),     -- Stripe price ID for monthly plan
+  stripe_monthly_price_id VARCHAR(255),     -- Stripe price ID for monthly plan
+  stripe_yearly_product_id VARCHAR(255),     -- Stripe price ID for yearly plan
+  stripe_yearly_price_id VARCHAR(255),      -- Stripe price ID for yearly plan
+  currency VARCHAR(3) DEFAULT 'USD',        -- Currency (default USD)
   is_active BOOLEAN DEFAULT TRUE,           -- Whether the plan is available for subscription
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

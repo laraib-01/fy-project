@@ -13,6 +13,9 @@ import {
   useDisclosure,
   Chip,
   ToastProvider,
+  Select,
+  SelectItem,
+  Switch,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
@@ -32,15 +35,19 @@ export const Subscriptions = () => {
   const [formData, setFormData] = useState({
     plan_id: null,
     plan_name: "",
+    description: "",
     monthly_price: "",
     yearly_price: "",
     max_teachers: "",
     max_parents: "",
     features: [],
+    currency: "USD",
     is_active: true,
   });
+  const [isYearlyEnabled, setIsYearlyEnabled] = useState(true);
   const [featureInput, setFeatureInput] = useState("");
-  const isAdmin = localStorage.getItem("educonnect_role") === "EduConnect_Admin";
+  const isAdmin =
+    localStorage.getItem("educonnect_role") === "EduConnect_Admin";
 
   // Form mode: 'create' or 'edit'
   const [formMode, setFormMode] = useState("create");
@@ -57,8 +64,7 @@ export const Subscriptions = () => {
   );
 
   // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const handleInputChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
       [name]:
@@ -106,11 +112,13 @@ export const Subscriptions = () => {
     setFormData({
       plan_id: null,
       plan_name: "",
+      description: "",
       monthly_price: "",
       yearly_price: "",
       max_teachers: "",
       max_parents: "",
       features: [],
+      currency: "USD",
       is_active: true,
     });
     setFeatureInput("");
@@ -122,11 +130,13 @@ export const Subscriptions = () => {
     setFormData({
       plan_id: plan.plan_id,
       plan_name: plan.plan_name,
+      description: plan.description,
       monthly_price: plan.monthly_price,
       yearly_price: plan.yearly_price,
       max_teachers: plan.max_teachers || "",
       max_parents: plan.max_parents || "",
       features: Array.isArray(plan.features) ? [...plan.features] : [],
+      currency: plan.currency,
       is_active: plan.is_active,
     });
     setFormMode("edit");
@@ -142,7 +152,7 @@ export const Subscriptions = () => {
 
     try {
       if (formMode === "create") {
-        await subscriptionService.createSubscriptionPlan(formData);
+        await subscriptionService.createPlan(formData);
         addToast({
           description: "Subscription plan created successfully",
           color: "success",
@@ -175,14 +185,17 @@ export const Subscriptions = () => {
     }
   };
 
-  // Handle plan status toggle
+  // Handle plan status toggle with Stripe integration
   const handleTogglePlanStatus = async (planId, currentStatus) => {
     if (!isAdmin) return;
 
     try {
       setIsLoading({ ...isLoading, [planId]: true });
+      
+      // Toggle the status in the backend (this will handle Stripe updates)
       await subscriptionService.togglePlanStatus(planId, !currentStatus);
 
+      // Update the UI optimistically
       setSubscriptionPlans((prevPlans) =>
         prevPlans.map((plan) =>
           plan.plan_id === planId
@@ -191,6 +204,7 @@ export const Subscriptions = () => {
         )
       );
 
+      // Show success message
       addToast({
         description: `Plan ${
           !currentStatus ? "activated" : "deactivated"
@@ -200,10 +214,21 @@ export const Subscriptions = () => {
       });
     } catch (error) {
       console.error("Failed to update plan status:", error);
+      
+      // Revert the UI on error
+      setSubscriptionPlans((prevPlans) =>
+        prevPlans.map((plan) =>
+          plan.plan_id === planId
+            ? { ...plan, is_active: currentStatus } // Revert to previous status
+            : plan
+        )
+      );
+      
+      // Show error message
       addToast({
         description: `Failed to ${
           !currentStatus ? "activate" : "deactivate"
-        } plan`,
+        } plan: ${error.response?.data?.message || error.message}`,
         color: "error",
         hideIcon: true,
       });
@@ -366,7 +391,6 @@ export const Subscriptions = () => {
           ))}
         </div>
       </div>
-
       {/* Add/Edit Plan Modal */}
       <Modal
         isOpen={isAddPlanModalOpen}
@@ -390,11 +414,55 @@ export const Subscriptions = () => {
                     label="Plan Name"
                     name="plan_name"
                     value={formData.plan_name}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      handleInputChange("plan_name", e.target.value)
+                    }
                     placeholder="Enter plan name"
                     isRequired
                     isDisabled={isSubmitting}
                   />
+                  <Select
+                    label="Currency"
+                    isRequired
+                    defaultSelectedKeys={["USD"]}
+                    value={formData.currency}
+                    onChange={(e) =>
+                      handleInputChange("currency", e.target.value)
+                    }
+                  >
+                    <SelectItem key="USD" value="USD">
+                      USD ($)
+                    </SelectItem>
+                    <SelectItem key="EUR" value="EUR">
+                      EUR (€)
+                    </SelectItem>
+                    <SelectItem key="GBP" value="GBP">
+                      GBP (£)
+                    </SelectItem>
+                  </Select>
+                </div>
+                <Input
+                  label="Description"
+                  placeholder="Brief description of the plan"
+                  value={formData.description}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
+                />
+                <div className="flex items-center">
+                  <Switch
+                    isSelected={isYearlyEnabled}
+                    onValueChange={setIsYearlyEnabled}
+                    className="mr-2"
+                  >
+                    Enable Yearly Billing
+                  </Switch>
+                </div>
+                <div
+                  className={`grid ${
+                    isYearlyEnabled ? "grid-cols-2" : "grid-cols-1"
+                  } gap-4`}
+                >
                   <Input
                     label="Monthly Price ($)"
                     name="monthly_price"
@@ -402,7 +470,9 @@ export const Subscriptions = () => {
                     min="0"
                     step="0.01"
                     value={formData.monthly_price}
-                    onChange={handleInputChange}
+                    onChange={(e) =>
+                      handleInputChange("monthly_price", e.target.value)
+                    }
                     placeholder="0.00"
                     isRequired
                     isDisabled={isSubmitting}
@@ -412,23 +482,29 @@ export const Subscriptions = () => {
                       </div>
                     }
                   />
-                  <Input
-                    label="Annual Price ($)"
-                    name="yearly_price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.yearly_price}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    isRequired
-                    isDisabled={isSubmitting}
-                    startContent={
-                      <div className="pointer-events-none flex items-center">
-                        <span className="text-default-400 text-small">$</span>
-                      </div>
-                    }
-                  />
+                  {isYearlyEnabled && (
+                    <Input
+                      label="Annual Price ($)"
+                      name="yearly_price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.yearly_price}
+                      onChange={(e) =>
+                        handleInputChange("yearly_price", e.target.value)
+                      }
+                      placeholder="0.00"
+                      isRequired
+                      isDisabled={isSubmitting}
+                      startContent={
+                        <div className="pointer-events-none flex items-center">
+                          <span className="text-default-400 text-small">$</span>
+                        </div>
+                      }
+                    />
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
                     <Input
                       label="Max Teachers"
@@ -436,7 +512,9 @@ export const Subscriptions = () => {
                       type="number"
                       min="0"
                       value={formData.max_teachers}
-                      onChange={handleInputChange}
+                      onChange={(e) =>
+                        handleInputChange("max_teachers", e.target.value)
+                      }
                       placeholder="Leave empty for unlimited"
                       isDisabled={isSubmitting}
                     />
@@ -451,7 +529,9 @@ export const Subscriptions = () => {
                       type="number"
                       min="0"
                       value={formData.max_parents}
-                      onChange={handleInputChange}
+                      onChange={(e) =>
+                        handleInputChange("max_parents", e.target.value)
+                      }
                       placeholder="Leave empty for unlimited"
                       isDisabled={isSubmitting}
                     />

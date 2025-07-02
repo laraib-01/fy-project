@@ -24,6 +24,7 @@ import {
   getSubscriptionPlanById,
   updateSubscriptionPlan,
   deleteSubscriptionPlan,
+  togglePlanStatus,
 } from "../controllers/subscriptionPlansController.js";
 import {
   createClass,
@@ -87,6 +88,7 @@ import {
 import {
   cancelSubscription,
   createSubscription,
+  createPaymentIntent,
   getCurrentSubscription,
   getPlans,
   getSubscriptionHistory,
@@ -341,6 +343,7 @@ router.get("/subscription-plans", authMiddleware, getSubscriptionPlans); // Publ
 router.get("/subscription-plans/:id", authMiddleware, getSubscriptionPlanById); // Public
 router.post("/subscription-plans", authMiddleware, createSubscriptionPlan); // Admin only
 router.put("/subscription-plans/:id", authMiddleware, updateSubscriptionPlan); // Admin only
+router.put("/subscription-plans/:id/status", authMiddleware, togglePlanStatus); // Admin only
 router.delete(
   "/subscription-plans/:id",
   authMiddleware,
@@ -350,11 +353,32 @@ router.delete(
 //
 // 📝 Subscriptions
 //
-router.get("/subscriptions/plans", getPlans); // Public - Get all available subscription plans
-router.get("/subscriptions/current", authMiddleware, getCurrentSubscription); // Get current subscription
-router.post("/subscriptions", authMiddleware, createSubscription); // Create new subscription
-router.post("/subscriptions/cancel", authMiddleware, cancelSubscription); // Cancel subscription
-router.get("/subscriptions/history", authMiddleware, getSubscriptionHistory); // Get subscription history
+router.get("/subscriptions/plans", getPlans);
+router.get("/subscriptions/current", authMiddleware, getCurrentSubscription);
+router.get(
+  "/subscriptions/history",
+  authMiddleware,
+  roleCheck(["School_Admin"]),
+  getSubscriptionHistory
+);
+router.post(
+  "/subscriptions",
+  authMiddleware,
+  roleCheck(["School_Admin"]),
+  createSubscription
+);
+router.post(
+  "/subscriptions/create-payment-intent",
+  authMiddleware,
+  roleCheck(["School_Admin"]),
+  createPaymentIntent
+);
+router.post(
+  "/subscriptions/cancel",
+  authMiddleware,
+  roleCheck(["School_Admin"]),
+  cancelSubscription
+); // Cancel subscription
 
 //
 // 💳 Transactions

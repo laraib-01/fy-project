@@ -25,60 +25,91 @@ export const subscriptionService = {
 
   createSubscriptionPlan: async (planData) => {
     try {
-      const response = await api.post(API_ENDPOINTS.SUBSCRIPTION_PLANS.BASE, {
+      const payload = {
         plan_name: planData.plan_name,
+        description: planData.description || '',
         monthly_price: parseFloat(planData.monthly_price),
-        yearly_price: parseFloat(planData.yearly_price),
-        max_teachers: planData.max_teachers
-          ? parseInt(planData.max_teachers)
-          : null,
-        max_parents: planData.max_parents
-          ? parseInt(planData.max_parents)
-          : null,
+        yearly_price: planData.yearly_price !== undefined ? parseFloat(planData.yearly_price) : 0,
+        max_teachers: planData.max_teachers ? parseInt(planData.max_teachers) : null,
+        max_parents: planData.max_parents ? parseInt(planData.max_parents) : null,
         features: Array.isArray(planData.features) ? planData.features : [],
+        currency: planData.currency || 'USD',
         is_active: planData.is_active !== false, // Default to true if not specified
-      });
-      return response.data.data;
+      };
+
+      const response = await api.post(API_ENDPOINTS.SUBSCRIPTION_PLANS.BASE, payload);
+      return response.data;
     } catch (error) {
       console.error("Error creating subscription plan:", error);
       throw error;
     }
   },
 
+  // Alias for createSubscriptionPlan for backward compatibility
+  createPlan: async (planData) => {
+    return subscriptionService.createSubscriptionPlan(planData);
+  },
+
   updateSubscriptionPlan: async (id, updates) => {
     try {
-      const updateData = {};
-      const allowedFields = [
-        "plan_name",
-        "monthly_price",
-        "yearly_price",
-        "max_teachers",
-        "max_parents",
-        "features",
-        "is_active",
-      ];
-
-      allowedFields.forEach((field) => {
-        if (field in updates) {
-          if (field.endsWith("_price")) {
-            updateData[field] = parseFloat(updates[field]);
-          } else if (field.startsWith("max_")) {
-            updateData[field] = updates[field]
-              ? parseInt(updates[field])
-              : null;
-          } else {
-            updateData[field] = updates[field];
-          }
-        }
-      });
+      // Prepare the update payload with proper type conversion
+      const payload = {};
+      
+      // Handle all possible fields that can be updated
+      if ('plan_name' in updates) payload.plan_name = updates.plan_name;
+      if ('description' in updates) payload.description = updates.description;
+      if ('currency' in updates) payload.currency = updates.currency;
+      if ('is_active' in updates) payload.is_active = updates.is_active;
+      
+      // Handle numeric fields with proper parsing
+      if ('monthly_price' in updates) {
+        payload.monthly_price = updates.monthly_price !== '' ? 
+          parseFloat(updates.monthly_price) : 0;
+      }
+      
+      if ('yearly_price' in updates) {
+        payload.yearly_price = updates.yearly_price !== '' ? 
+          parseFloat(updates.yearly_price) : 0;
+      }
+      
+      if ('max_teachers' in updates) {
+        payload.max_teachers = updates.max_teachers !== '' ? 
+          parseInt(updates.max_teachers) : null;
+      }
+      
+      if ('max_parents' in updates) {
+        payload.max_parents = updates.max_parents !== '' ? 
+          parseInt(updates.max_parents) : null;
+      }
+      
+      // Handle features array
+      if ('features' in updates) {
+        payload.features = Array.isArray(updates.features) ? 
+          updates.features : [];
+      }
 
       const response = await api.put(
         API_ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id),
-        updateData
+        payload
       );
-      return response.data.data;
+      
+      // Return the full response to access any metadata
+      return response.data;
     } catch (error) {
       console.error(`Error updating subscription plan ${id}:`, error);
+      throw error;
+    }
+  },
+
+  togglePlanStatus: async (id, isActive) => {
+    try {
+      const response = await api.put(
+        `${API_ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id)}/status`,
+        { is_active: isActive }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(`Error toggling status for plan ${id}:`, error);
       throw error;
     }
   },
@@ -91,12 +122,6 @@ export const subscriptionService = {
       console.error(`Error deleting subscription plan ${id}:`, error);
       throw error;
     }
-  },
-
-  togglePlanStatus: async (id, isActive) => {
-    return subscriptionService.updateSubscriptionPlan(id, {
-      is_active: isActive,
-    });
   },
 
   // Get all available subscription plans
@@ -113,9 +138,7 @@ export const subscriptionService = {
   // Get current active subscription for the authenticated school
   getCurrentSubscription: async () => {
     try {
-      const response = await api.get(
-        API_ENDPOINTS.SUBSCRIPTIONS.CURRENT
-      );
+      const response = await api.get(API_ENDPOINTS.SUBSCRIPTIONS.CURRENT);
       return response || null;
     } catch (error) {
       // If no subscription found, return null instead of throwing
@@ -127,6 +150,23 @@ export const subscriptionService = {
     }
   },
 
+  // Create a payment intent for subscription
+  createPaymentIntent: async (planName, billingCycle) => {
+    try {
+      const response = await api.post(
+        API_ENDPOINTS.SUBSCRIPTIONS.CREATE_PAYMENT_INTENT,
+        {
+          plan_name: planName,
+          billing_cycle: billingCycle,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      throw error;
+    }
+  },
+
   // Create a new subscription
   createSubscription: async (subscriptionData) => {
     try {
@@ -134,9 +174,26 @@ export const subscriptionService = {
         API_ENDPOINTS.SUBSCRIPTIONS.BASE,
         subscriptionData
       );
-      return response;
+      return response.data;
     } catch (error) {
       console.error("Error creating subscription:", error);
+      throw error;
+    }
+  },
+
+  // Confirm card payment
+  confirmCardPayment: async (clientSecret, paymentMethod) => {
+    try {
+      const response = await api.post(
+        API_ENDPOINTS.SUBSCRIPTIONS.CONFIRM_PAYMENT,
+        {
+          payment_method_id: paymentMethod.id,
+          client_secret: clientSecret,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error confirming card payment:", error);
       throw error;
     }
   },
@@ -157,9 +214,7 @@ export const subscriptionService = {
   // Get subscription history for the school
   getSubscriptionHistory: async () => {
     try {
-      const response = await api.get(
-        API_ENDPOINTS.SUBSCRIPTIONS.HISTORY
-      );
+      const response = await api.get(API_ENDPOINTS.SUBSCRIPTIONS.HISTORY);
       return response.data.data || [];
     } catch (error) {
       console.error("Error fetching subscription history:", error);
@@ -170,9 +225,7 @@ export const subscriptionService = {
   // Check if subscription is required for the current user
   checkSubscriptionRequired: async () => {
     try {
-      const response = await api.get(
-        API_ENDPOINTS.SUBSCRIPTIONS.REQUIRED
-      );
+      const response = await api.get(API_ENDPOINTS.SUBSCRIPTIONS.REQUIRED);
       return response.data.requiresSubscription || false;
     } catch (error) {
       console.error("Error checking subscription requirement:", error);

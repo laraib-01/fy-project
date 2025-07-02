@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
     CURRENT: `${API_BASE_URL}/subscriptions/current`,
     HISTORY: `${API_BASE_URL}/subscriptions/history`,
     REQUIRED: `${API_BASE_URL}/subscriptions/required`,
+    CREATE_PAYMENT_INTENT: `${API_BASE_URL}/subscriptions/create-payment-intent`,
   },
 
   // Transactions

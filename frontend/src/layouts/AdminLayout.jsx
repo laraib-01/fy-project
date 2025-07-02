@@ -23,6 +23,7 @@ export const AdminLayout = ({ children }) => {
 
   const handleLogout = () => {
     authService.logout();
+    navigate("/");
   };
 
   const sidebarItems = [
