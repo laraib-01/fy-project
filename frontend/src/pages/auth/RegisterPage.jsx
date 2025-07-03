@@ -87,7 +87,11 @@ export const RegisterPage = () => {
         });
 
         setTimeout(() => {
-          authService.storeAuthData(res?.data?.token, res?.data?.user);
+          authService.storeAuthData(
+            res?.data?.token,
+            res?.data?.hasActiveSubscription,
+            res?.data?.user
+          );
           if (
             res?.data?.user?.role === "School_Admin" &&
             res?.data?.hasActiveSubscription

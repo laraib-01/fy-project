@@ -136,7 +136,7 @@ export const createSubscription = async (req, res) => {
       customerId = customer.id;
     }
 
-    // Create subscription in Stripe
+    // Create subscription in Stripe with initial pending status
     const subscription = await createStripeSubscription(customerId, priceId, {
       plan_name,
       billing_cycle,
@@ -146,6 +146,18 @@ export const createSubscription = async (req, res) => {
       price_amount: priceAmount,
       currency: plan.currency || "USD",
     });
+
+    // Determine subscription status based on payment status
+    const paymentStatus =
+      subscription.status === "active" && subscription.latest_invoice?.status === "paid"
+        ? "succeeded"
+        : subscription.status === "payment_failed"
+        ? "failed"
+        : subscription.status === "incomplete"
+        ? "pending"
+        : "pending";
+    const subscriptionStatus =
+      paymentStatus === "succeeded" ? "Active" : "Pending";
 
     // Calculate subscription dates
     const today = new Date();
@@ -157,13 +169,14 @@ export const createSubscription = async (req, res) => {
       endDate.setMonth(today.getMonth() + 1);
     }
 
-    // Save subscription to database
+    // Save subscription to database with dynamic statuses
     const [result] = await db.query(
       `INSERT INTO Subscriptions 
        (school_id, plan_type, plan_id, billing_cycle, start_date, end_date, 
         status, payment_status, transaction_id, stripe_subscription_id, 
-        payment_method_id, amount, currency)
-       VALUES (?, ?, ?, ?, ?, ?, 'Active', 'Paid', ?, ?, ?, ?, ?)`,
+        payment_method_id, amount, currency, stripe_payment_intent_id, 
+        stripe_invoice_id, last_payment_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.school_id,
         plan_name,
@@ -171,13 +184,41 @@ export const createSubscription = async (req, res) => {
         billing_cycle,
         today,
         endDate,
-        `stripe_${subscription.subscriptionId}`,
-        subscription.subscriptionId,
+        subscriptionStatus, // Dynamic status based on payment
+        paymentStatus, // Payment status from Stripe
+        subscription.latest_invoice?.payment_intent?.id ||
+          `stripe_${subscription.id}`,
+        subscription.id, // Stripe subscription ID
         payment_method_id,
         priceAmount,
         plan.currency || "USD",
+        subscription.latest_invoice?.payment_intent?.id, // Store payment intent ID
+        subscription.latest_invoice?.id, // Store invoice ID
+        subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000)
+          : null,
+        null, // last_payment_error (added as the 16th parameter)
       ]
     );
+
+    // If payment failed, update the status accordingly
+    if (
+      subscription.status === "incomplete" ||
+      subscription.status === "past_due"
+    ) {
+      await db.query(
+        `UPDATE Subscriptions 
+         SET status = 'Pending', 
+             payment_status = 'failed',
+             failure_reason = ?
+         WHERE subscription_id = ?`,
+        [
+          subscription.latest_invoice?.payment_intent?.last_payment_error
+            ?.message || "Payment failed",
+          result.insertId,
+        ]
+      );
+    }
 
     // Update school's subscription status
     await db.query(
@@ -203,6 +244,7 @@ export const createSubscription = async (req, res) => {
       status: "success",
       message: "Subscription created successfully",
       data: subscriptionData,
+      subscription: subscription,
     });
   } catch (error) {
     // No need to rollback as we're not using transactions with the db pool directly

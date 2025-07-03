@@ -28,6 +28,7 @@ import { TeacherStudentsList } from "./pages/students/TeacherStudentsList";
 import { SubscriptionPlans } from "./pages/subscriptions/SubscriptionPlans";
 import { ForgotPassword } from "./pages/auth/ForgotPassword";
 import { ResetPassword } from "./pages/auth/ResetPassword";
+import { AdminList } from "./pages/admins/AdminList";
 
 const AppWrapper = () => {
   return (
@@ -166,6 +167,16 @@ const AppWrapper = () => {
           <PrivateRoute allowedRoles={["EduConnect_Admin"]}>
             <AdminLayout>
               <AdminDashboard />
+            </AdminLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/admins"
+        element={
+          <PrivateRoute allowedRoles={["EduConnect_Admin"]}>
+            <AdminLayout>
+              <AdminList />
             </AdminLayout>
           </PrivateRoute>
         }

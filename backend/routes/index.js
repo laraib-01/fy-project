@@ -1,5 +1,11 @@
 import express from "express";
 import {
+  getAllAdmins,
+  createAdmin,
+  updateAdmin,
+  deleteAdmin,
+} from "../controllers/adminController.js";
+import {
   register,
   login,
   logout,
@@ -103,7 +109,7 @@ const router = express.Router();
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", logout);
-router.get("/me", authMiddleware, getProfile);
+router.get("/profile", authMiddleware, getProfile);
 
 // Password reset routes
 router.post("/forgot-password", forgotPassword);
@@ -396,4 +402,11 @@ router.post("/transactions", authMiddleware, createTransaction); // Create trans
 router.put("/transactions/:id/status", authMiddleware, updateTransactionStatus); // Update transaction status (Admin only)
 router.get("/transactions/summary", authMiddleware, getTransactionSummary); // Get transaction summary (Admin only)
 
+// Admin routes
+router.get("/admins", authMiddleware, getAllAdmins); // Get all admins (Admin only)
+router.post("/admins", authMiddleware, createAdmin); // Create new admin (Admin only)
+router.put("/admins/:id", authMiddleware, updateAdmin); // Update admin (Admin only)
+router.delete("/admins/:id", authMiddleware, deleteAdmin); // Delete admin (Admin only)
+
+// Export the router
 export default router;

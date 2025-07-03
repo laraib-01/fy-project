@@ -28,9 +28,10 @@ export const AdminLayout = ({ children }) => {
 
   const sidebarItems = [
     { name: "Dashboard", icon: "lucide:layout-dashboard", path: "/admin" },
+    { name: "Admins", icon: "lucide:building", path: "/admin/admins" },
     { name: "Schools", icon: "lucide:building", path: "/admin/schools" },
     {
-      name: "Subscriptions",
+      name: "Subscriptions Plans",
       icon: "lucide:credit-card",
       path: "/admin/subscriptions",
     },

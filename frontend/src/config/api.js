@@ -33,6 +33,12 @@ export const API_ENDPOINTS = {
     DELETE_ACCOUNT: `${API_BASE_URL}/users/delete-me`,
   },
 
+  // Admins
+  ADMINS: {
+    BASE: `${API_BASE_URL}/admins`,
+    BY_ID: (id) => `${API_BASE_URL}/admins/${id}`,
+  },
+
   // Events
   EVENTS: {
     BASE: `${API_BASE_URL}/events`,

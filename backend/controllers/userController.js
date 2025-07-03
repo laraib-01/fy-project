@@ -2,7 +2,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import db from "../config/db.js";
-import { sendPasswordResetEmail, sendPasswordResetConfirmation } from "../services/emailService.js";
+import {
+  sendPasswordResetEmail,
+  sendPasswordResetConfirmation,
+} from "../services/emailService.js";
 
 // Error handler
 const handleError = (res, status = 500, message = "An error occurred") => {
@@ -113,7 +116,7 @@ export const register = async (req, res) => {
 
       // Check for active subscription
       const [subscriptionRows] = await db.query(
-        `SELECT 1 FROM Subscriptions WHERE school_id = ? AND status = 'Active'`,
+        `SELECT 1 FROM Subscriptions WHERE school_id = ? AND status = 'Active' AND payment_status = 'Succeeded'`,
         [school_id]
       );
       hasActiveSubscription = subscriptionRows.length > 0;
@@ -190,7 +193,7 @@ export const login = async (req, res) => {
     let hasActiveSubscription = false;
     if (user.role === "School_Admin" && user.school_id) {
       const [subscriptionRows] = await db.query(
-        `SELECT 1 FROM Subscriptions WHERE school_id = ? AND status = 'Active'`,
+        `SELECT 1 FROM Subscriptions WHERE school_id = ? AND status = 'Active' AND payment_status = 'Succeeded'`,
         [user.school_id]
       );
       hasActiveSubscription = subscriptionRows.length > 0;
@@ -244,9 +247,10 @@ export const logout = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT user_id, name, email, role, school_id FROM Users WHERE user_id = ?", [
-      req.user.id,
-    ]);
+    const [rows] = await db.query(
+      "SELECT user_id, name, email, role, school_id FROM Users WHERE user_id = ?",
+      [req.user.id]
+    );
     const user = rows[0];
 
     if (!user) {
@@ -264,18 +268,10 @@ export const getProfile = async (req, res) => {
   }
 };
 
-/**
- * Generate a secure random token for password reset
- * @returns {string} Random token
- */
 const generateResetToken = () => {
-  return crypto.randomBytes(32).toString('hex');
+  return crypto.randomBytes(32).toString("hex");
 };
 
-/**
- * Handle forgot password request
- * Sends a password reset email to the user
- */
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -285,14 +281,17 @@ export const forgotPassword = async (req, res) => {
     }
 
     // Find user by email
-    const [users] = await db.query("SELECT * FROM Users WHERE email = ?", [email.toLowerCase()]);
+    const [users] = await db.query("SELECT * FROM Users WHERE email = ?", [
+      email.toLowerCase(),
+    ]);
     const user = users[0];
 
     // Don't reveal if user doesn't exist (security best practice)
     if (!user) {
       return res.status(200).json({
         status: "success",
-        message: "If an account with that email exists, a password reset link has been sent",
+        message:
+          "If an account with that email exists, a password reset link has been sent",
       });
     }
 
@@ -311,7 +310,8 @@ export const forgotPassword = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      message: "If an account with that email exists, a password reset link has been sent",
+      message:
+        "If an account with that email exists, a password reset link has been sent",
     });
   } catch (error) {
     console.error("Error in forgotPassword:", error);
@@ -319,9 +319,6 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-/**
- * Reset user's password using a valid reset token
- */
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -343,7 +340,11 @@ export const resetPassword = async (req, res) => {
 
     // Validate password
     if (password.length < 8) {
-      return handleError(res, 400, "Password must be at least 8 characters long");
+      return handleError(
+        res,
+        400,
+        "Password must be at least 8 characters long"
+      );
     }
 
     // Hash new password
@@ -371,9 +372,6 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-/**
- * Validate a password reset token
- */
 export const validateResetToken = async (req, res) => {
   try {
     const { token } = req.params;

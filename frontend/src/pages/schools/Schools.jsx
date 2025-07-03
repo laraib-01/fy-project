@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Tabs,
-  Tab,
   Card,
   CardBody,
   Button,
@@ -28,7 +26,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/react";
-import axios from "axios";
+import schoolService from "../../services/schoolService";
 
 export const Schools = () => {
   const {
@@ -60,75 +58,19 @@ export const Schools = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentSchoolId, setCurrentSchoolId] = useState(null);
 
-  console.log(currentSchoolId);
-
-  const subscriptionPlans = [
-    {
-      id: 1,
-      name: "Basic",
-      monthlyPrice: 49,
-      annualPrice: 490,
-      maxTeachers: 20,
-      maxParents: 500,
-      features: [
-        "Student performance tracking",
-        "Attendance management",
-        "Basic announcements",
-        "Email support",
-      ],
-      active: true,
-    },
-    {
-      id: 2,
-      name: "Standard",
-      monthlyPrice: 99,
-      annualPrice: 990,
-      maxTeachers: 50,
-      maxParents: 1500,
-      features: [
-        "All Basic features",
-        "Event calendar",
-        "Document sharing",
-        "Automated notifications",
-        "Priority email support",
-      ],
-      active: true,
-    },
-    {
-      id: 3,
-      name: "Premium",
-      monthlyPrice: 199,
-      annualPrice: 1990,
-      maxTeachers: -1, // Unlimited
-      maxParents: -1, // Unlimited
-      features: [
-        "All Standard features",
-        "Custom branding",
-        "Advanced analytics",
-        "API access",
-        "Dedicated support",
-        "Training sessions",
-      ],
-      active: true,
-    },
-  ];
-
   const fetchSchools = async () => {
     try {
-      const token = localStorage.getItem("educonnect_token");
-      const response = await axios.get("http://localhost:5000/api/schools", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.data?.status === "error") {
+      const response = await schoolService.getAllSchools();
+      if (response?.status === "error") {
         addToast({
           title: "Error",
-          description: response.data?.message,
+          description: response?.message,
           color: "error",
           hideIcon: true,
         });
         return;
       }
-      const { data } = response.data;
+      const { data } = response;
       console.log(data);
       setSchools(data?.schools || []);
       setIsLoading(false);
@@ -180,15 +122,9 @@ export const Schools = () => {
 
       let res;
       if (isEditing && currentSchoolId) {
-        res = await axios.put(
-          `http://localhost:5000/api/schools/${currentSchoolId}`,
-          payload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        res = await schoolService.updateSchool(currentSchoolId, payload);
       } else {
-        res = await axios.post("http://localhost:5000/api/schools", payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        res = await schoolService.createSchool(payload);
       }
 
       addToast({
@@ -200,7 +136,7 @@ export const Schools = () => {
 
       fetchSchools();
       resetForm();
-      onAddSchoolModalOpenChange(false);
+      onAddEditSchoolModalOpenChange(false);
     } catch (error) {
       console.error("Failed to save school:", error);
       addToast({
@@ -232,13 +168,7 @@ export const Schools = () => {
   const handleDeleteSchool = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("educonnect_token");
-      await axios.delete(
-        `http://localhost:5000/api/schools/${currentSchoolId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await schoolService.deleteSchool(currentSchoolId);
 
       addToast({
         title: "Deleted",
@@ -253,7 +183,7 @@ export const Schools = () => {
       addToast({
         title: "Error",
         description: "Failed to delete school.",
-        status: "error",
+        color: "error",
       });
       setIsLoading(false);
     }
@@ -264,14 +194,6 @@ export const Schools = () => {
       school?.school_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school?.plan?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   return (
     <>
@@ -318,7 +240,7 @@ export const Schools = () => {
                 <TableColumn>STATUS</TableColumn>
                 <TableColumn>ACTIONS</TableColumn>
               </TableHeader>
-              <TableBody>
+              <TableBody emptyContent="No schools found">
                 {filteredSchools.map((school) => (
                   <TableRow key={school.school_id}>
                     <TableCell>{school.school_name}</TableCell>

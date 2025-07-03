@@ -22,21 +22,37 @@ const logError = (msg, err) => {
 // Create a Stripe customer and link to a school
 export const createCustomer = async (user, paymentMethodId) => {
   try {
+    if (!user.school_id) throw new Error("Missing school_id on user");
+
+    // Safety check: prevent reuse of an already-attached PaymentMethod
+    const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+    if (pm.customer) {
+      throw new Error("Payment method already attached to another customer");
+    }
+
+    // Create customer
     const customer = await stripe.customers.create({
       email: user.email,
       name: user.school_name || `${user.first_name} ${user.last_name}`,
-      payment_method: paymentMethodId,
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
       metadata: {
         userId: user.id,
         schoolId: user.school_id,
       },
     });
 
-    if (!user.school_id) throw new Error("Missing school_id on user");
+    // Attach payment method
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customer.id,
+    });
 
+    // Set default payment method
+    await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+
+    // Save to DB
     await db.query(
       "UPDATE Schools SET stripe_customer_id = ? WHERE school_id = ?",
       [customer.id, user.school_id]
@@ -56,20 +72,50 @@ export const createStripeSubscription = async (
   metadata = {}
 ) => {
   try {
+    // First, get the default payment method for the customer
+    const paymentMethods = await stripe.paymentMethods.list({
+      customer: customerId,
+      type: 'card',
+      limit: 1
+    });
+
+    if (paymentMethods.data.length === 0) {
+      throw new Error('No payment method found for this customer');
+    }
+
+    const paymentMethod = paymentMethods.data[0];
+    
+    // Create subscription with immediate payment
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
-      payment_behavior: "default_incomplete",
-      payment_settings: { save_default_payment_method: "on_subscription" },
-      expand: ["latest_invoice.payment_intent"],
+      default_payment_method: paymentMethod.id,
+      expand: ['latest_invoice.payment_intent'],
       metadata,
+      off_session: true, // This allows the payment to complete without customer action
+      // payment_behavior: 'pending_if_incomplete',
+      proration_behavior: 'create_prorations',
+      payment_settings: {
+        payment_method_types: ['card'],
+        save_default_payment_method: 'on_subscription'
+      },
+      collection_method: 'charge_automatically'
     });
 
-    return {
-      subscriptionId: subscription.id,
-      clientSecret: subscription.latest_invoice.payment_intent.client_secret,
-      status: subscription.status,
-    };
+    // If the subscription requires payment, confirm the payment intent
+    if (subscription.pending_setup_intent) {
+      const setupIntent = await stripe.setupIntents.confirm(
+        subscription.pending_setup_intent,
+        { payment_method: paymentMethod.id }
+      );
+    }
+
+    // Refresh the subscription to get the latest status
+    const updatedSubscription = await stripe.subscriptions.retrieve(subscription.id, {
+      expand: ['latest_invoice.payment_intent']
+    });
+
+    return updatedSubscription;
   } catch (error) {
     logError("Error creating subscription:", error);
     throw new Error("Failed to create subscription");

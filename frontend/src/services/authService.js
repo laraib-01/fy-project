@@ -58,7 +58,8 @@ const authService = {
       // Clear all auth-related data
       localStorage.removeItem("educonnect_token");
       localStorage.removeItem("educonnect_user");
-      localStorage.removeItem("educonnect_subscription_status");
+      localStorage.removeItem("educonnect_role");
+      localStorage.removeItem("educonnect_hasActiveSubscription");
     }
   },
 
