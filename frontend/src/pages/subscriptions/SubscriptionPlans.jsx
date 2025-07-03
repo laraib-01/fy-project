@@ -281,7 +281,8 @@ export const SubscriptionPlans = () => {
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            Complete Your Subscription
+            Confirm Subscription
+            <p className="text-slate-500 text-sm">Secure checkout in just a few clicks</p>
           </ModalHeader>
           <ModalBody>
             {selectedPlan && (

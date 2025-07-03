@@ -17,7 +17,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { addToast } from "@heroui/toast";
 import subscriptionService from "../../services/subscriptionService";
-
+import { Icon } from "@iconify/react";
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -97,71 +97,82 @@ const CheckoutForm = ({ plan, billingCycle, onSuccess, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <h3 className="text-lg font-medium">Payment Details</h3>
-          <p className="text-sm text-foreground-500">
-            {plan.plan_name} Plan (
-            {billingCycle === "yearly" ? "Yearly" : "Monthly"})
-          </p>
-        </CardHeader>
-        <Divider />
-        <CardBody className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-foreground-700">
-              Card Information
-            </label>
-            <div className="border rounded-lg p-3">
-              <CardElement options={cardElementOptions} />
+    <form onSubmit={handleSubmit} className="py-4">
+      <div className="space-y-6">
+        {/* Plan summary */}
+        <div className="bg-slate-50 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-medium text-slate-900">{plan.plan_name}</h3>
+              <p className="text-sm text-slate-600">
+                {billingCycle === "yearly"
+                  ? "Yearly subscription"
+                  : "Monthly subscription"}
+              </p>
             </div>
-            {error && <p className="text-sm text-danger-500 mt-2">{error}</p>}
-          </div>
-
-          <div className="bg-content2 p-4 rounded-lg">
-            <div className="flex justify-between">
-              <span>Plan:</span>
-              <span className="font-medium">{plan.plan_name}</span>
-            </div>
-            <div className="flex justify-between mt-2">
-              <span>Billing Cycle:</span>
-              <span className="font-medium">
-                {billingCycle === "yearly" ? "Yearly" : "Monthly"}
-              </span>
-            </div>
-            <Divider className="my-2" />
-            <div className="flex justify-between font-semibold">
-              <span>Total:</span>
-              <span>
+            <div className="text-right">
+              <span className="text-2xl font-semibold text-slate-900">
                 $
                 {billingCycle === "yearly"
                   ? plan.yearly_price
                   : plan.monthly_price}
-                <span className="text-sm font-normal text-foreground-500">
-                  /{billingCycle === "yearly" ? "year" : "month"}
-                </span>
+              </span>
+              <span className="text-slate-600 text-sm">
+                /{billingCycle === "yearly" ? "year" : "month"}
               </span>
             </div>
           </div>
-        </CardBody>
+
+          <div className="flex items-center gap-2 text-sm text-emerald-600">
+            <Icon icon="heroicons:check" />
+            <span>Cancel anytime • No setup fees</span>
+          </div>
+        </div>
+
         <Divider />
-        <CardFooter className="flex justify-between">
-          <Button variant="flat" onPress={onCancel} isDisabled={isProcessing}>
-            Cancel
-          </Button>
+
+        {/* Payment details */}
+        <div className="space-y-5">
+          <div>
+            <label
+              htmlFor="card-minimal"
+              className="text-sm font-medium text-slate-700 mb-3 block"
+            >
+              Payment Details
+            </label>
+            <div className="border rounded-lg p-3">
+              <CardElement options={cardElementOptions} />
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="pt-6 space-y-3">
           <Button
             type="submit"
             color="primary"
+            className="w-full h-14 text-base font-medium rounded-xl text-white"
             isDisabled={!stripe || isProcessing}
-            className="min-w-[120px]"
           >
             {isProcessing ? (
               <Spinner size="sm" color="current" className="mr-2" />
             ) : null}
-            {isProcessing ? "Processing..." : "Subscribe Now"}
+            {isProcessing ? "Processing..." : "Complete Subscription"}
           </Button>
-        </CardFooter>
-      </Card>
+          <Button
+            variant="ghost"
+            onPress={onCancel}
+            isDisabled={isProcessing}
+            className="w-full border-none h-12 text-slate-600 hover:text-slate-800 font-normal"
+          >
+            Maybe later
+          </Button>
+        </div>
+
+        <p className="text-xs text-slate-500 text-center pt-4">
+          By subscribing, you agree to our Terms of Service and Privacy Policy.
+        </p>
+      </div>
     </form>
   );
 };
