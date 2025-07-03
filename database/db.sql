@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS Subscriptions (
   start_date DATE,                                    -- When it starts
   end_date DATE,                                      -- When it ends
   status ENUM('Pending', 'Active', 'Cancelled', 'Expired', 'Failed') NOT NULL DEFAULT 'Pending', -- Status of subscription
-  payment_status ENUM('Pending', 'Paid', 'Failed', 'Refunded') NOT NULL DEFAULT 'Pending', -- Payment status
+  payment_status ENUM('Succeeded', 'Failed', 'Pending') NOT NULL DEFAULT 'Pending', -- Payment status
   transaction_id VARCHAR(255),                        -- Payment reference
   stripe_subscription_id VARCHAR(255),                -- Stripe subscription ID
   stripe_customer_id VARCHAR(255),                    -- Stripe customer ID
