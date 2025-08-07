@@ -70,9 +70,7 @@ export const Schools = () => {
         });
         return;
       }
-      const { data } = response;
-      console.log(data);
-      setSchools(data?.schools || []);
+      setSchools(response?.schools || []);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching schools:", error);
@@ -112,9 +110,9 @@ export const Schools = () => {
     setIsLoading(true);
     try {
       const payload = {
-        name: formData.schoolName,
+        school_name: formData.schoolName,
         address: formData.address,
-        phone_number: formData.phone,
+        contact_number: formData.phone,
         email: formData.email,
         admin_name: formData.adminName,
         admin_email: formData.adminEmail,
@@ -237,7 +235,6 @@ export const Schools = () => {
                 <TableColumn>USERS</TableColumn>
                 <TableColumn>SUBSCRIPTION DATE</TableColumn>
                 <TableColumn>NEXT BILLING</TableColumn>
-                <TableColumn>STATUS</TableColumn>
                 <TableColumn>ACTIONS</TableColumn>
               </TableHeader>
               <TableBody emptyContent="No schools found">
@@ -259,7 +256,7 @@ export const Schools = () => {
                         </span> */}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <Chip
                         color={
                           school.subscription_status === "Active"
@@ -272,7 +269,7 @@ export const Schools = () => {
                       >
                         {school.subscription_status}
                       </Chip>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
